@@ -33,7 +33,6 @@ data/
 projects/
 .mcp.json
 .windsurfrules
-.github/
 
 # Kotlin
 .kotlin/
