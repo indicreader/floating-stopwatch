@@ -1,0 +1,138 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:gravity="center_vertical"
+    android:paddingVertical="6dp"
+    android:paddingHorizontal="10dp"
+    android:background="?attr/selectableItemBackground">
+
+    <!-- Question Number Index -->
+    <TextView
+        android:id="@+id/tv_question_index"
+        android:layout_width="46dp"
+        android:layout_height="wrap_content"
+        tools:text="Q101"
+        android:fontFamily="monospace"
+        android:textAppearance="?attr/textAppearanceLabelLarge"
+        android:textColor="?attr/colorOnSurface"
+        android:textStyle="bold" />
+
+    <!-- Option / Skip Badge -->
+    <TextView
+        android:id="@+id/tv_selected_option"
+        android:layout_width="32dp"
+        android:layout_height="26dp"
+        android:layout_marginStart="2dp"
+        android:gravity="center"
+        android:background="@drawable/bg_badge_option"
+        tools:text="B"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="?attr/colorOnSecondaryContainer" />
+
+    <!-- Timing Block: Split delta & Overtime Tag -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:layout_marginHorizontal="6dp"
+        android:orientation="vertical"
+        android:gravity="center_vertical">
+
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:id="@+id/tv_split_time"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                tools:text="+00:34.2"
+                android:fontFamily="monospace"
+                android:textAppearance="?attr/textAppearanceBodySmall"
+                android:textColor="?attr/colorOnSurface"
+                android:textStyle="bold" />
+
+            <!-- Pacing Spike Badge (shown when split exceeds target time) -->
+            <TextView
+                android:id="@+id/tv_spike_tag"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="4dp"
+                android:paddingHorizontal="4dp"
+                android:paddingVertical="1dp"
+                android:background="@drawable/bg_badge_overtime"
+                tools:text="+4s over"
+                android:textSize="10sp"
+                android:textStyle="bold"
+                android:textColor="?attr/colorOnErrorContainer"
+                android:visibility="gone"
+                tools:visibility="visible" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_cumulative_time"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            tools:text="Total: 01:14.2"
+            android:fontFamily="monospace"
+            android:textSize="11sp"
+            android:textColor="?attr/colorOnSurfaceVariant" />
+
+    </LinearLayout>
+
+    <!-- Post-Pause Verification Actions -->
+    <LinearLayout
+        android:id="@+id/layout_verification"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:visibility="gone"
+        tools:visibility="visible">
+
+        <!-- Correct Button -->
+        <ImageButton
+            android:id="@+id/btn_verify_correct"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:padding="6dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_check"
+            android:contentDescription="Mark Correct"
+            app:tint="?attr/colorSecondary" />
+
+        <!-- Incorrect Button -->
+        <ImageButton
+            android:id="@+id/btn_verify_incorrect"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:padding="6dp"
+            android:layout_marginStart="2dp"
+            android:background="?attr/selectableItemBackgroundBorderless"
+            android:src="@drawable/ic_cross"
+            android:contentDescription="Mark Incorrect"
+            app:tint="?attr/colorOutline" />
+
+        <!-- Skipped / Neutral Indicator -->
+        <TextView
+            android:id="@+id/tv_verify_skipped"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:gravity="center"
+            android:text="—"
+            android:textSize="14sp"
+            android:textColor="?attr/colorOnSurfaceVariant"
+            android:visibility="gone" />
+
+    </LinearLayout>
+
+</LinearLayout>

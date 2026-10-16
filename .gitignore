@@ -1,0 +1,48 @@
+# Built application files
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Gradle and build outputs
+.gradle/
+build/
+app/build/
+release/
+
+# Local configuration file (SDK location, etc.)
+local.properties
+
+# Android Studio / IntelliJ / Eclipse / Editors
+.idea/
+.vscode/
+.cursor/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+
+# Agent / Tooling configs
+.agent/
+.agents/
+.jetro/
+.venv/
+data/
+projects/
+.mcp.json
+.windsurfrules
+.github/
+
+# Kotlin
+.kotlin/
+
+# OS specific files
+.DS_Store
+Thumbs.db
+
+# Markdown documentation (ignore non-essential markdown files, keep README.md)
+*.md
+docs/
+!README.md

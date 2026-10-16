@@ -1,0 +1,63 @@
+<resources>
+    <!-- Target Question Time -->
+    <string-array name="pref_target_question_time_entries">
+        <item>20 seconds</item>
+        <item>30 seconds (Default)</item>
+        <item>45 seconds</item>
+        <item>60 seconds (1 min)</item>
+        <item>90 seconds (1.5 min)</item>
+        <item>120 seconds (2 min)</item>
+    </string-array>
+
+    <string-array name="pref_target_question_time_values">
+        <item>20</item>
+        <item>30</item>
+        <item>45</item>
+        <item>60</item>
+        <item>90</item>
+        <item>120</item>
+    </string-array>
+
+    <!-- Accent Color -->
+    <string-array name="pref_accent_color_entries">
+        <item>Mint Teal (Default)</item>
+        <item>Cyan Blue</item>
+        <item>Amber Orange</item>
+        <item>Coral Red</item>
+    </string-array>
+
+    <string-array name="pref_accent_color_values">
+        <item>#00E676</item>
+        <item>#00E5FF</item>
+        <item>#FFAB00</item>
+        <item>#FF5252</item>
+    </string-array>
+
+    <!-- Background Opacity -->
+    <string-array name="pref_clock_opacity_entries">
+        <item>100% Solid</item>
+        <item>90% Standard (Default)</item>
+        <item>75% Translucent</item>
+        <item>50% Semi-Transparent</item>
+    </string-array>
+
+    <string-array name="pref_clock_opacity_values">
+        <item>100</item>
+        <item>90</item>
+        <item>75</item>
+        <item>50</item>
+    </string-array>
+
+    <!-- Font Size -->
+    <string-array name="pref_font_size_entries">
+        <item>Compact (26sp)</item>
+        <item>Medium (32sp - Default)</item>
+        <item>Large (38sp)</item>
+    </string-array>
+
+    <string-array name="pref_font_size_values">
+        <item>26</item>
+        <item>32</item>
+        <item>38</item>
+    </string-array>
+</resources>

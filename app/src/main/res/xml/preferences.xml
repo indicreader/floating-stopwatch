@@ -1,0 +1,121 @@
+<PreferenceScreen
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <!-- 1. Dedicated Category for Exam Practice Mode -->
+    <PreferenceCategory
+        android:title="@string/pref_category_exam_practice_mode"
+        app:iconSpaceReserved="false">
+
+        <ListPreference
+            android:key="pref_target_question_time"
+            android:title="@string/pref_target_question_time_title"
+            android:dialogTitle="@string/pref_target_question_time_dialog_title"
+            android:entries="@array/pref_target_question_time_entries"
+            android:entryValues="@array/pref_target_question_time_values"
+            android:defaultValue="30"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false" />
+
+        <SwitchPreferenceCompat
+            android:key="pref_prompt_start_question_num"
+            android:title="@string/pref_prompt_start_question_num_title"
+            android:summary="@string/pref_prompt_start_question_num_summary"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false" />
+
+        <SwitchPreferenceCompat
+            android:key="pref_show_practice_buttons"
+            android:title="@string/pref_show_practice_buttons_title"
+            android:summary="@string/pref_show_practice_buttons_summary"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false" />
+
+        <SwitchPreferenceCompat
+            android:key="pref_haptic_feedback"
+            android:title="@string/pref_haptic_feedback_title"
+            android:summary="@string/pref_haptic_feedback_summary"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false" />
+
+        <Preference
+            android:key="pref_fork_attribution"
+            android:title="@string/pref_fork_attribution_title"
+            android:summary="@string/pref_fork_attribution_summary"
+            app:iconSpaceReserved="false" />
+
+    </PreferenceCategory>
+
+    <!-- 2. Original App Clock Appearance Category -->
+    <PreferenceCategory
+        android:title="@string/pref_category_appearance"
+        app:iconSpaceReserved="false">
+
+        <ListPreference
+            android:key="pref_accent_color"
+            android:title="@string/pref_accent_color_title"
+            android:dialogTitle="@string/pref_accent_color_dialog_title"
+            android:entries="@array/pref_accent_color_entries"
+            android:entryValues="@array/pref_accent_color_values"
+            android:defaultValue="#00E676"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false" />
+
+        <ListPreference
+            android:key="pref_clock_opacity"
+            android:title="@string/pref_clock_opacity_title"
+            android:dialogTitle="@string/pref_clock_opacity_dialog_title"
+            android:entries="@array/pref_clock_opacity_entries"
+            android:entryValues="@array/pref_clock_opacity_values"
+            android:defaultValue="90"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false" />
+
+        <ListPreference
+            android:key="pref_font_size"
+            android:title="@string/pref_font_size_title"
+            android:dialogTitle="@string/pref_font_size_dialog_title"
+            android:entries="@array/pref_font_size_entries"
+            android:entryValues="@array/pref_font_size_values"
+            android:defaultValue="32"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false" />
+
+        <SwitchPreferenceCompat
+            android:key="pref_show_milliseconds"
+            android:title="@string/pref_show_milliseconds_title"
+            android:summary="@string/pref_show_milliseconds_summary"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false" />
+
+    </PreferenceCategory>
+
+    <!-- 3. Floating Window Behavior Category -->
+    <PreferenceCategory
+        android:title="@string/pref_category_window"
+        app:iconSpaceReserved="false">
+
+        <SwitchPreferenceCompat
+            android:key="pref_keep_screen_on"
+            android:title="@string/pref_keep_screen_on_title"
+            android:summary="@string/pref_keep_screen_on_summary"
+            android:defaultValue="false"
+            app:iconSpaceReserved="false" />
+
+        <SwitchPreferenceCompat
+            android:key="pref_lock_position"
+            android:title="@string/pref_lock_position_title"
+            android:summary="@string/pref_lock_position_summary"
+            android:defaultValue="false"
+            app:iconSpaceReserved="false" />
+
+        <SwitchPreferenceCompat
+            android:key="pref_snap_edges"
+            android:title="@string/pref_snap_edges_title"
+            android:summary="@string/pref_snap_edges_summary"
+            android:defaultValue="false"
+            app:iconSpaceReserved="false" />
+
+    </PreferenceCategory>
+
+</PreferenceScreen>

@@ -1,0 +1,43 @@
+<resources>
+    <!-- Material 3 Dynamic Baseline Colors (Fallbacks for devices prior to Android 12) -->
+    <color name="md_theme_light_primary">#006495</color>
+    <color name="md_theme_light_onPrimary">#FFFFFF</color>
+    <color name="md_theme_light_primaryContainer">#CBE6FF</color>
+    <color name="md_theme_light_onPrimaryContainer">#001E30</color>
+    <color name="md_theme_light_secondary">#50606E</color>
+    <color name="md_theme_light_onSecondary">#FFFFFF</color>
+    <color name="md_theme_light_secondaryContainer">#D3E5F5</color>
+    <color name="md_theme_light_onSecondaryContainer">#0C1D29</color>
+    <color name="md_theme_light_surface">#FCFCFF</color>
+    <color name="md_theme_light_onSurface">#191C1E</color>
+    <color name="md_theme_light_surfaceContainer">#EDEFE2</color>
+    <color name="md_theme_light_surfaceContainerHigh">#ECE6F0</color>
+    <color name="md_theme_light_outline">#71787E</color>
+    <color name="md_theme_light_error">#BA1A1A</color>
+    <color name="md_theme_light_onError">#FFFFFF</color>
+    <color name="md_theme_light_errorContainer">#FFDAD6</color>
+    <color name="md_theme_light_onErrorContainer">#410002</color>
+    <color name="pacing_warning_light">#B36B00</color>
+    <color name="pacing_success_light">#2E7D32</color>
+
+    <!-- Dark Mode Palette -->
+    <color name="md_theme_dark_primary">#8FCDFF</color>
+    <color name="md_theme_dark_onPrimary">#003450</color>
+    <color name="md_theme_dark_primaryContainer">#004B72</color>
+    <color name="md_theme_dark_onPrimaryContainer">#CBE6FF</color>
+    <color name="md_theme_dark_secondary">#B8C8D9</color>
+    <color name="md_theme_dark_onSecondary">#22323F</color>
+    <color name="md_theme_dark_secondaryContainer">#394956</color>
+    <color name="md_theme_dark_onSecondaryContainer">#D3E5F5</color>
+    <color name="md_theme_dark_surface">#191C1E</color>
+    <color name="md_theme_dark_onSurface">#E1E2E5</color>
+    <color name="md_theme_dark_surfaceContainer">#1E2022</color>
+    <color name="md_theme_dark_surfaceContainerHigh">#2B2930</color>
+    <color name="md_theme_dark_outline">#8B9198</color>
+    <color name="md_theme_dark_error">#FFB4AB</color>
+    <color name="md_theme_dark_onError">#690005</color>
+    <color name="md_theme_dark_errorContainer">#93000A</color>
+    <color name="md_theme_dark_onErrorContainer">#FFDAD6</color>
+    <color name="pacing_warning_dark">#FFB951</color>
+    <color name="pacing_success_dark">#81C784</color>
+</resources>
