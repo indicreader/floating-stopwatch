@@ -92,51 +92,84 @@ class LapAdapter(
                     binding.btnVerifyCorrect.visibility = View.VISIBLE
                     binding.btnVerifyIncorrect.visibility = View.VISIBLE
 
-                    val activeGreen = ColorStateList.valueOf(Color.parseColor("#2E7D32"))
-                    val activeRed = ColorStateList.valueOf(Color.parseColor("#BA1A1A"))
-                    val dimmedGray = ColorStateList.valueOf(Color.parseColor("#8E9192"))
-
-                    when (item.verificationStatus) {
-                        VerificationStatus.CORRECT -> {
-                            binding.btnVerifyCorrect.imageTintList = activeGreen
-                            binding.btnVerifyIncorrect.imageTintList = dimmedGray
-                            binding.btnVerifyCorrect.alpha = 1.0f
-                            binding.btnVerifyIncorrect.alpha = 0.35f
-                        }
-                        VerificationStatus.INCORRECT -> {
-                            binding.btnVerifyCorrect.imageTintList = dimmedGray
-                            binding.btnVerifyIncorrect.imageTintList = activeRed
-                            binding.btnVerifyCorrect.alpha = 0.35f
-                            binding.btnVerifyIncorrect.alpha = 1.0f
-                        }
-                        else -> {
-                            binding.btnVerifyCorrect.imageTintList = dimmedGray
-                            binding.btnVerifyIncorrect.imageTintList = dimmedGray
-                            binding.btnVerifyCorrect.alpha = 0.65f
-                            binding.btnVerifyIncorrect.alpha = 0.65f
-                        }
-                    }
+                    applyVerificationStyling(binding, item.verificationStatus)
 
                     binding.btnVerifyCorrect.setOnClickListener {
-                        val newStatus = if (item.verificationStatus == VerificationStatus.CORRECT) {
-                            VerificationStatus.UNVERIFIED
-                        } else {
-                            VerificationStatus.CORRECT
+                        val pos = bindingAdapterPosition
+                        if (pos != RecyclerView.NO_POSITION) {
+                            val currentItem = getItem(pos)
+                            val newStatus = if (currentItem.verificationStatus == VerificationStatus.CORRECT) {
+                                VerificationStatus.UNVERIFIED
+                            } else {
+                                VerificationStatus.CORRECT
+                            }
+                            currentItem.verificationStatus = newStatus
+                            applyVerificationStyling(binding, newStatus)
+                            onVerificationChanged(currentItem.questionNumber, newStatus)
                         }
-                        onVerificationChanged(item.questionNumber, newStatus)
                     }
 
                     binding.btnVerifyIncorrect.setOnClickListener {
-                        val newStatus = if (item.verificationStatus == VerificationStatus.INCORRECT) {
-                            VerificationStatus.UNVERIFIED
-                        } else {
-                            VerificationStatus.INCORRECT
+                        val pos = bindingAdapterPosition
+                        if (pos != RecyclerView.NO_POSITION) {
+                            val currentItem = getItem(pos)
+                            val newStatus = if (currentItem.verificationStatus == VerificationStatus.INCORRECT) {
+                                VerificationStatus.UNVERIFIED
+                            } else {
+                                VerificationStatus.INCORRECT
+                            }
+                            currentItem.verificationStatus = newStatus
+                            applyVerificationStyling(binding, newStatus)
+                            onVerificationChanged(currentItem.questionNumber, newStatus)
                         }
-                        onVerificationChanged(item.questionNumber, newStatus)
                     }
                 }
             } else {
                 binding.layoutVerification.visibility = View.GONE
+            }
+        }
+
+        private fun applyVerificationStyling(
+            binding: ItemLapResponseBinding,
+            status: VerificationStatus
+        ) {
+            val colorGreenActive = ColorStateList.valueOf(Color.parseColor("#000000"))
+            val colorRedActive = ColorStateList.valueOf(Color.parseColor("#FFFFFF"))
+            val colorDimmed = ColorStateList.valueOf(Color.parseColor("#7C8B84"))
+
+            when (status) {
+                VerificationStatus.CORRECT -> {
+                    // Right button turns vibrant green with dark checkmark
+                    binding.btnVerifyCorrect.setBackgroundResource(R.drawable.bg_circle_primary)
+                    binding.btnVerifyCorrect.imageTintList = colorGreenActive
+                    binding.btnVerifyCorrect.alpha = 1.0f
+
+                    // Wrong button dims
+                    binding.btnVerifyIncorrect.setBackgroundResource(R.drawable.bg_circle_dimmed)
+                    binding.btnVerifyIncorrect.imageTintList = colorDimmed
+                    binding.btnVerifyIncorrect.alpha = 0.35f
+                }
+                VerificationStatus.INCORRECT -> {
+                    // Right button dims
+                    binding.btnVerifyCorrect.setBackgroundResource(R.drawable.bg_circle_dimmed)
+                    binding.btnVerifyCorrect.imageTintList = colorDimmed
+                    binding.btnVerifyCorrect.alpha = 0.35f
+
+                    // Wrong button turns vibrant red with white cross
+                    binding.btnVerifyIncorrect.setBackgroundResource(R.drawable.bg_circle_danger)
+                    binding.btnVerifyIncorrect.imageTintList = colorRedActive
+                    binding.btnVerifyIncorrect.alpha = 1.0f
+                }
+                else -> {
+                    // Neither selected - both subtle/dimmed
+                    binding.btnVerifyCorrect.setBackgroundResource(R.drawable.bg_circle_dimmed)
+                    binding.btnVerifyCorrect.imageTintList = colorDimmed
+                    binding.btnVerifyCorrect.alpha = 0.7f
+
+                    binding.btnVerifyIncorrect.setBackgroundResource(R.drawable.bg_circle_dimmed)
+                    binding.btnVerifyIncorrect.imageTintList = colorDimmed
+                    binding.btnVerifyIncorrect.alpha = 0.7f
+                }
             }
         }
     }

@@ -371,14 +371,13 @@ class FloatingStopwatchService : Service() {
         lapAdapter = LapAdapter { questionNumber, newStatus ->
             sessionManager.updateVerification(questionNumber, newStatus)
             updateMetricsBanner()
-            lapAdapter.notifyItemChanged(
-                sessionManager.responses.indexOfFirst { it.questionNumber == questionNumber }
-            )
+            lapAdapter.submitList(sessionManager.responses.map { it.copy() })
         }
 
         binding.rvLaps.apply {
             layoutManager = LinearLayoutManager(this@FloatingStopwatchService)
             adapter = lapAdapter
+            itemAnimator = null
         }
     }
 
