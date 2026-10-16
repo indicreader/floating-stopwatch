@@ -95,9 +95,9 @@ class FloatingStopwatchService : Service() {
         30 * 60 * 1000L,  // 30 min
         60 * 60 * 1000L   // 60 min
     )
-    private var countdownPresetIndex = 2 // default 5m
-    private var countdownTotalMillis: Long = 5 * 60 * 1000L
-    private var countdownRemainingMillis: Long = 5 * 60 * 1000L
+    private var countdownPresetIndex = 0
+    private var countdownTotalMillis: Long = 0L
+    private var countdownRemainingMillis: Long = 0L
 
     // Wall Clock State
     private var is24HourFormat: Boolean = false
@@ -738,7 +738,8 @@ class FloatingStopwatchService : Service() {
 
     private fun startCountdown() {
         if (countdownRemainingMillis <= 0L) {
-            countdownRemainingMillis = countdownTotalMillis
+            countdownRemainingMillis = if (countdownTotalMillis > 0L) countdownTotalMillis else countdownPresets[countdownPresetIndex]
+            countdownTotalMillis = countdownRemainingMillis
         }
 
         isRunning = true
@@ -766,7 +767,11 @@ class FloatingStopwatchService : Service() {
 
         countdownRemainingMillis = countdownTotalMillis
         binding.btnPlayPause.setImageResource(R.drawable.ic_play_arrow)
-        binding.tvTimerDisplay.text = formatCountdownTime(countdownRemainingMillis)
+        binding.tvTimerDisplay.text = if (countdownRemainingMillis > 0L) {
+            formatCountdownTime(countdownRemainingMillis)
+        } else {
+            "00:00:00.0"
+        }
     }
 
     private fun updateCountdownTicker() {
