@@ -35,6 +35,12 @@ class LapAdapter(
             notifyItemRangeChanged(0, itemCount)
         }
 
+    var isNumericOptionFormat: Boolean = false
+        set(value) {
+            field = value
+            notifyItemRangeChanged(0, itemCount)
+        }
+
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): LapViewHolder {
         val binding = ItemLapResponseBinding.inflate(
             LayoutInflater.from(parent.context),
@@ -64,7 +70,7 @@ class LapAdapter(
                 binding.tvSelectedOption.setBackgroundResource(R.drawable.bg_badge_skip)
                 binding.tvSelectedOption.setTextColor(Color.parseColor("#CFD8DC"))
             } else {
-                binding.tvSelectedOption.text = item.selectedOption.label
+                binding.tvSelectedOption.text = item.selectedOption.getDisplayLabel(isNumericOptionFormat)
                 binding.tvSelectedOption.setBackgroundResource(R.drawable.bg_badge_option)
                 binding.tvSelectedOption.setTextColor(Color.WHITE)
             }

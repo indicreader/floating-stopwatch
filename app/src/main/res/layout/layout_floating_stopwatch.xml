@@ -185,7 +185,7 @@
                     android:layout_width="60dp"
                     android:layout_height="36dp"
                     android:layout_marginStart="6dp"
-                    android:background="@drawable/bg_circle_secondary"
+                    android:background="@drawable/bg_rounded_input_rect"
                     android:gravity="center"
                     android:inputType="number"
                     android:text="1"

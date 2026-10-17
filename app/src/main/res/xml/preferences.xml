@@ -17,6 +17,16 @@
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false" />
 
+        <ListPreference
+            android:key="pref_option_format"
+            android:title="@string/pref_option_format_title"
+            android:dialogTitle="@string/pref_option_format_dialog_title"
+            android:entries="@array/pref_option_format_entries"
+            android:entryValues="@array/pref_option_format_values"
+            android:defaultValue="letters"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false" />
+
         <SwitchPreferenceCompat
             android:key="pref_prompt_start_question_num"
             android:title="@string/pref_prompt_start_question_num_title"

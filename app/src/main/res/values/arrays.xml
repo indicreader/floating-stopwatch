@@ -18,6 +18,17 @@
         <item>120</item>
     </string-array>
 
+    <!-- Option Label Format (Letters A, B, C, D vs Numbers 1, 2, 3, 4) -->
+    <string-array name="pref_option_format_entries">
+        <item>A, B, C, D (Letters - Default)</item>
+        <item>1, 2, 3, 4 (Numbers)</item>
+    </string-array>
+
+    <string-array name="pref_option_format_values">
+        <item>letters</item>
+        <item>numbers</item>
+    </string-array>
+
     <!-- Accent Color -->
     <string-array name="pref_accent_color_entries">
         <item>Mint Teal (Default)</item>

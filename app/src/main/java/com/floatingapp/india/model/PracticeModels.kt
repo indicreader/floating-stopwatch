@@ -11,7 +11,17 @@ enum class OptionChoice(val label: String) {
     B("B"),
     C("C"),
     D("D"),
-    SKIP("SKIP")
+    SKIP("SKIP");
+
+    fun getDisplayLabel(isNumeric: Boolean): String {
+        return when (this) {
+            A -> if (isNumeric) "1" else "A"
+            B -> if (isNumeric) "2" else "B"
+            C -> if (isNumeric) "3" else "C"
+            D -> if (isNumeric) "4" else "D"
+            SKIP -> "SKIP"
+        }
+    }
 }
 
 /**

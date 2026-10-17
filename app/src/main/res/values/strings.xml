@@ -34,6 +34,12 @@
     <string name="pref_prompt_start_question_num_title">Prompt for starting question number</string>
     <string name="pref_prompt_start_question_num_summary">Show starting question prompt when stopwatch starts to match your PDF index</string>
 
+    <!-- Option Format (A/B/C/D vs 1/2/3/4) -->
+    <string name="pref_option_format_key">pref_option_format</string>
+    <string name="pref_option_format_title">Option Label Format</string>
+    <string name="pref_option_format_dialog_title">Choose Option Label Format</string>
+    <string name="pref_option_format_summary">Display options as A, B, C, D or 1, 2, 3, 4</string>
+
     <!-- Response Row & Haptics -->
     <string name="pref_show_practice_buttons_key">pref_show_practice_buttons</string>
     <string name="pref_show_practice_buttons_title">Show Practice Lap Buttons (A/B/C/D/Skip)</string>

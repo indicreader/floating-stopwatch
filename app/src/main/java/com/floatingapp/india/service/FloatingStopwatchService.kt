@@ -116,6 +116,13 @@ class FloatingStopwatchService : Service() {
         }
     }
 
+    private val prefChangeListener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ ->
+        loadPreferences()
+        if (::binding.isInitialized) {
+            applyPreferences()
+        }
+    }
+
     override fun onBind(intent: Intent?): IBinder? = null
 
     override fun onCreate() {
@@ -124,6 +131,7 @@ class FloatingStopwatchService : Service() {
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
 
         loadPreferences()
+        prefs.registerOnSharedPreferenceChangeListener(prefChangeListener)
         startForegroundServiceNotification()
         inflateOverlayWindow()
     }
@@ -373,11 +381,13 @@ class FloatingStopwatchService : Service() {
     }
 
     private fun setupLapRecyclerView() {
+        val isNumeric = prefs.getString("pref_option_format", "letters") == "numbers"
         lapAdapter = LapAdapter { questionNumber, newStatus ->
             sessionManager.updateVerification(questionNumber, newStatus)
             updateMetricsBanner()
             lapAdapter.submitList(sessionManager.responses.map { it.copy() })
         }
+        lapAdapter.isNumericOptionFormat = isNumeric
 
         binding.rvLaps.apply {
             layoutManager = LinearLayoutManager(this@FloatingStopwatchService)
@@ -461,6 +471,19 @@ class FloatingStopwatchService : Service() {
         val fontSizeSp = prefs.getString("pref_font_size", "32")?.toFloatOrNull() ?: 32f
         binding.tvTimerDisplay.textSize = fontSizeSp
         binding.cardFloatingContainer.alpha = 1.0f
+
+        val optionFormat = prefs.getString("pref_option_format", "letters") ?: "letters"
+        val isNumeric = optionFormat == "numbers"
+
+        val optionsLayout = binding.layoutOptionButtons
+        optionsLayout.btnOptionA.text = if (isNumeric) "1" else "A"
+        optionsLayout.btnOptionB.text = if (isNumeric) "2" else "B"
+        optionsLayout.btnOptionC.text = if (isNumeric) "3" else "C"
+        optionsLayout.btnOptionD.text = if (isNumeric) "4" else "D"
+
+        if (::lapAdapter.isInitialized) {
+            lapAdapter.isNumericOptionFormat = isNumeric
+        }
     }
 
     /**
@@ -866,6 +889,7 @@ class FloatingStopwatchService : Service() {
 
     override fun onDestroy() {
         super.onDestroy()
+        prefs.unregisterOnSharedPreferenceChangeListener(prefChangeListener)
         tickerHandler.removeCallbacks(tickerRunnable)
         try {
             if (::binding.isInitialized && binding.root.isAttachedToWindow) {
