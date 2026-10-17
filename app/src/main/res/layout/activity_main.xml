@@ -351,13 +351,20 @@
 
                         </LinearLayout>
 
-                        <ImageView
-                            android:layout_width="20dp"
-                            android:layout_height="20dp"
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_launch_countdown"
+                            android:layout_width="wrap_content"
+                            android:layout_height="40dp"
                             android:layout_alignParentEnd="true"
                             android:layout_centerVertical="true"
-                            android:src="@drawable/ic_more_vert"
-                            app:tint="#859990" />
+                            android:text="Launch ▶"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:backgroundTint="#FFAB00"
+                            android:textColor="#17221D"
+                            app:cornerRadius="10dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp" />
 
                     </RelativeLayout>
 
@@ -365,12 +372,13 @@
 
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- 3. Simple Preset Card -->
+            <!-- 3. Simple Preset Card (Deprecated/Hidden) -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_preset_simple"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
+                android:visibility="gone"
                 android:clickable="true"
                 android:focusable="true"
                 app:cardCornerRadius="16dp"
@@ -467,12 +475,13 @@
 
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- 4. Wall Clock Preset Card -->
+            <!-- 4. Wall Clock Preset Card (Deprecated/Hidden) -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_preset_wall_clock"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="24dp"
+                android:visibility="gone"
                 android:clickable="true"
                 android:focusable="true"
                 app:cardCornerRadius="16dp"

@@ -50,7 +50,7 @@ class MainActivity : AppCompatActivity() {
             requestOverlayPermission()
         }
 
-        // Setup All 4 Preset Mode Cards
+        // Setup Practice Timer & Countdown Mode Cards
         binding.cardPresetStopwatch.setOnClickListener {
             selectMode(FloatingStopwatchService.MODE_STOPWATCH)
             checkPermissionsAndLaunch()
@@ -61,17 +61,13 @@ class MainActivity : AppCompatActivity() {
             checkPermissionsAndLaunch()
         }
 
-        binding.cardPresetSimple.setOnClickListener {
-            selectMode(FloatingStopwatchService.MODE_SIMPLE)
-            checkPermissionsAndLaunch()
-        }
-
-        binding.cardPresetWallClock.setOnClickListener {
-            selectMode(FloatingStopwatchService.MODE_WALL_CLOCK)
-            checkPermissionsAndLaunch()
-        }
-
         binding.btnLaunchOverlay.setOnClickListener {
+            selectMode(FloatingStopwatchService.MODE_STOPWATCH)
+            checkPermissionsAndLaunch()
+        }
+
+        binding.btnLaunchCountdown.setOnClickListener {
+            selectMode(FloatingStopwatchService.MODE_COUNTDOWN)
             checkPermissionsAndLaunch()
         }
 
@@ -87,17 +83,12 @@ class MainActivity : AppCompatActivity() {
         val colorSelectedStroke = android.graphics.Color.parseColor("#00E676")
         val colorNormalStroke = android.graphics.Color.parseColor("#24342C")
         val colorCountdownStroke = android.graphics.Color.parseColor("#FFAB00")
-        val colorCoralStroke = android.graphics.Color.parseColor("#FF5252")
 
         binding.cardPresetStopwatch.strokeColor = if (selectedMode == FloatingStopwatchService.MODE_STOPWATCH) colorSelectedStroke else colorNormalStroke
         binding.cardPresetCountdown.strokeColor = if (selectedMode == FloatingStopwatchService.MODE_COUNTDOWN) colorCountdownStroke else colorNormalStroke
-        binding.cardPresetSimple.strokeColor = if (selectedMode == FloatingStopwatchService.MODE_SIMPLE) colorCoralStroke else colorNormalStroke
-        binding.cardPresetWallClock.strokeColor = if (selectedMode == FloatingStopwatchService.MODE_WALL_CLOCK) colorCoralStroke else colorNormalStroke
 
         binding.cardPresetStopwatch.strokeWidth = if (selectedMode == FloatingStopwatchService.MODE_STOPWATCH) 4 else 2
         binding.cardPresetCountdown.strokeWidth = if (selectedMode == FloatingStopwatchService.MODE_COUNTDOWN) 4 else 2
-        binding.cardPresetSimple.strokeWidth = if (selectedMode == FloatingStopwatchService.MODE_SIMPLE) 4 else 2
-        binding.cardPresetWallClock.strokeWidth = if (selectedMode == FloatingStopwatchService.MODE_WALL_CLOCK) 4 else 2
     }
 
     override fun onResume() {
@@ -116,11 +107,15 @@ class MainActivity : AppCompatActivity() {
             binding.cardPermissionBanner.visibility = View.GONE
             binding.btnLaunchOverlay.isEnabled = true
             binding.btnLaunchOverlay.alpha = 1.0f
+            binding.btnLaunchCountdown.isEnabled = true
+            binding.btnLaunchCountdown.alpha = 1.0f
         } else {
             binding.cardPermissionBanner.visibility = View.VISIBLE
             binding.tvPermissionStatus.setText(R.string.status_permission_denied)
             binding.btnLaunchOverlay.isEnabled = false
             binding.btnLaunchOverlay.alpha = 0.5f
+            binding.btnLaunchCountdown.isEnabled = false
+            binding.btnLaunchCountdown.alpha = 0.5f
         }
     }
 
@@ -146,12 +141,7 @@ class MainActivity : AppCompatActivity() {
         }
         ContextCompat.startForegroundService(this, intent)
 
-        val modeLabel = when (selectedMode) {
-            FloatingStopwatchService.MODE_COUNTDOWN -> "Countdown Timer"
-            FloatingStopwatchService.MODE_SIMPLE -> "Simple Clock"
-            FloatingStopwatchService.MODE_WALL_CLOCK -> "Wall Clock"
-            else -> "Practice Stopwatch"
-        }
+        val modeLabel = if (selectedMode == FloatingStopwatchService.MODE_COUNTDOWN) "Countdown Timer" else "Practice Stopwatch"
         Toast.makeText(this, "$modeLabel Launched", Toast.LENGTH_SHORT).show()
     }
 

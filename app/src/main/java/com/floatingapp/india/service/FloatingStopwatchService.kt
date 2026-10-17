@@ -41,8 +41,6 @@ import com.floatingapp.india.model.OptionChoice
 import com.floatingapp.india.model.QuestionResponse
 import com.floatingapp.india.ui.lap.LapAdapter
 import com.floatingapp.india.ui.settings.SettingsActivity
-import java.text.SimpleDateFormat
-import java.util.Date
 import java.util.Locale
 
 /**
@@ -65,9 +63,7 @@ class FloatingStopwatchService : Service() {
 
     enum class ClockMode {
         STOPWATCH,
-        COUNTDOWN,
-        SIMPLE,
-        WALL_CLOCK
+        COUNTDOWN
     }
 
     private lateinit var windowManager: WindowManager
@@ -96,12 +92,9 @@ class FloatingStopwatchService : Service() {
         30 * 60 * 1000L,  // 30 min
         60 * 60 * 1000L   // 60 min
     )
-    private var countdownPresetIndex = 0
-    private var countdownTotalMillis: Long = 0L
-    private var countdownRemainingMillis: Long = 0L
-
-    // Wall Clock State
-    private var is24HourFormat: Boolean = false
+    private var countdownPresetIndex = 2 // default 5 min
+    private var countdownTotalMillis: Long = 5 * 60 * 1000L
+    private var countdownRemainingMillis: Long = 5 * 60 * 1000L
 
     private val tickerHandler = Handler(Looper.getMainLooper())
     private val tickerRunnable = object : Runnable {
@@ -117,19 +110,6 @@ class FloatingStopwatchService : Service() {
                     if (isRunning) {
                         updateCountdownTicker()
                         tickerHandler.postDelayed(this, 50)
-                    }
-                }
-                ClockMode.WALL_CLOCK -> {
-                    updateWallClockDisplay()
-                    tickerHandler.postDelayed(this, 500)
-                }
-                ClockMode.SIMPLE -> {
-                    if (isRunning) {
-                        updateSimpleDisplay()
-                        tickerHandler.postDelayed(this, 100)
-                    } else {
-                        updateSimpleDisplay()
-                        tickerHandler.postDelayed(this, 1000)
                     }
                 }
             }
@@ -155,8 +135,6 @@ class FloatingStopwatchService : Service() {
 
         val newMode = when (modeKey) {
             MODE_COUNTDOWN -> ClockMode.COUNTDOWN
-            MODE_SIMPLE -> ClockMode.SIMPLE
-            MODE_WALL_CLOCK -> ClockMode.WALL_CLOCK
             else -> ClockMode.STOPWATCH
         }
 
@@ -425,22 +403,15 @@ class FloatingStopwatchService : Service() {
                     if (isRunning) pauseStopwatch() else startStopwatchWithPromptCheck()
                 }
                 ClockMode.COUNTDOWN -> {
-                    if (isRunning) pauseCountdown() else startCountdown()
-                }
-                ClockMode.SIMPLE -> {
-                    if (isRunning) pauseStopwatch() else startStopwatch()
-                }
-                ClockMode.WALL_CLOCK -> {
-                    // Wall clock runs live
+                    if (isRunning) pauseCountdown() else startCountdownWithPromptCheck()
                 }
             }
         }
 
         binding.btnReset.setOnClickListener {
             when (currentMode) {
-                ClockMode.STOPWATCH, ClockMode.SIMPLE -> resetStopwatch()
+                ClockMode.STOPWATCH -> resetStopwatch()
                 ClockMode.COUNTDOWN -> resetCountdown()
-                ClockMode.WALL_CLOCK -> {}
             }
         }
 
@@ -449,14 +420,12 @@ class FloatingStopwatchService : Service() {
             binding.layoutLapsDrawer.visibility = if (isVisible) View.GONE else View.VISIBLE
         }
 
-        binding.btnCountdownPreset.setOnClickListener {
+        binding.btnCountdownPresetChip.setOnClickListener {
             cycleCountdownPreset()
         }
 
-        binding.btnWallClockToggle.setOnClickListener {
-            is24HourFormat = !is24HourFormat
-            updateWallClockDisplay()
-            Toast.makeText(this, if (is24HourFormat) "24-Hour Format" else "12-Hour Format", Toast.LENGTH_SHORT).show()
+        binding.btnCountdownPreset.setOnClickListener {
+            cycleCountdownPreset()
         }
 
         binding.btnFloatingSettings.setOnClickListener {
@@ -480,7 +449,11 @@ class FloatingStopwatchService : Service() {
             layoutParams.flags = layoutParams.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
             safeUpdateViewLayout()
 
-            startStopwatch()
+            if (currentMode == ClockMode.COUNTDOWN) {
+                startCountdown()
+            } else {
+                startStopwatch()
+            }
         }
     }
 
@@ -501,8 +474,6 @@ class FloatingStopwatchService : Service() {
         when (currentMode) {
             ClockMode.STOPWATCH -> configureStopwatchMode()
             ClockMode.COUNTDOWN -> configureCountdownMode()
-            ClockMode.SIMPLE -> configureSimpleMode()
-            ClockMode.WALL_CLOCK -> configureWallClockMode()
         }
     }
 
@@ -510,6 +481,7 @@ class FloatingStopwatchService : Service() {
         binding.tvWindowTitle.text = "STOPWATCH"
         binding.tvWindowTitle.setTextColor(Color.parseColor("#859990"))
         binding.btnPlayPause.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#00E676"))
+        binding.btnCountdownPresetChip.visibility = View.GONE
 
         binding.tvTimerSubtext.visibility = View.GONE
         binding.tvActivePacing.visibility = View.VISIBLE
@@ -532,19 +504,21 @@ class FloatingStopwatchService : Service() {
         binding.tvWindowTitle.setTextColor(Color.parseColor("#FFAB00"))
         binding.btnPlayPause.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#FFAB00"))
 
+        val mins = (if (countdownTotalMillis > 0L) countdownTotalMillis else countdownPresets[countdownPresetIndex]) / 60000
+        binding.btnCountdownPresetChip.visibility = View.VISIBLE
+        binding.btnCountdownPresetChip.text = "${mins}m ▾"
+
         binding.tvTimerSubtext.visibility = View.VISIBLE
         binding.tvTimerSubtext.text = "TIME REMAINING"
         binding.tvTimerSubtext.setTextColor(Color.parseColor("#FFD54F"))
 
-        binding.tvActivePacing.visibility = View.GONE
-        binding.layoutOptionButtons.root.visibility = View.GONE
-        binding.layoutLapsDrawer.visibility = View.GONE
-        binding.layoutAccuracyBanner.visibility = View.GONE
-        binding.layoutInlinePrompt.visibility = View.GONE
+        binding.tvActivePacing.visibility = View.VISIBLE
+        val showButtons = prefs.getBoolean("pref_show_practice_buttons", true)
+        binding.layoutOptionButtons.root.visibility = if (showButtons) View.VISIBLE else View.GONE
 
-        binding.btnToggleLaps.visibility = View.GONE
-        binding.tvLapCountBadge.visibility = View.GONE
-        binding.btnCountdownPreset.visibility = View.VISIBLE
+        binding.btnToggleLaps.visibility = View.VISIBLE
+        binding.tvLapCountBadge.visibility = View.VISIBLE
+        binding.btnCountdownPreset.visibility = View.GONE
         binding.btnWallClockToggle.visibility = View.GONE
         binding.btnPlayPause.visibility = View.VISIBLE
         binding.btnReset.visibility = View.VISIBLE
@@ -552,56 +526,13 @@ class FloatingStopwatchService : Service() {
         resetCountdown()
     }
 
-    private fun configureSimpleMode() {
-        binding.tvWindowTitle.text = "SIMPLE"
-        binding.tvWindowTitle.setTextColor(Color.parseColor("#FF5252"))
-        binding.btnPlayPause.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#FF5252"))
-
-        binding.tvTimerSubtext.visibility = View.GONE
-        binding.tvActivePacing.visibility = View.GONE
-        binding.layoutOptionButtons.root.visibility = View.GONE
-        binding.layoutLapsDrawer.visibility = View.GONE
-        binding.layoutAccuracyBanner.visibility = View.GONE
-        binding.layoutInlinePrompt.visibility = View.GONE
-
-        binding.btnToggleLaps.visibility = View.GONE
-        binding.tvLapCountBadge.visibility = View.GONE
-        binding.btnCountdownPreset.visibility = View.GONE
-        binding.btnWallClockToggle.visibility = View.GONE
-        binding.btnPlayPause.visibility = View.VISIBLE
-        binding.btnReset.visibility = View.VISIBLE
-
-        resetStopwatch()
-    }
-
-    private fun configureWallClockMode() {
-        binding.tvWindowTitle.text = "LOCAL TIME"
-        binding.tvWindowTitle.setTextColor(Color.parseColor("#FF5252"))
-
-        binding.tvTimerSubtext.visibility = View.VISIBLE
-        binding.tvActivePacing.visibility = View.GONE
-        binding.layoutOptionButtons.root.visibility = View.GONE
-        binding.layoutLapsDrawer.visibility = View.GONE
-        binding.layoutAccuracyBanner.visibility = View.GONE
-        binding.layoutInlinePrompt.visibility = View.GONE
-
-        binding.btnToggleLaps.visibility = View.GONE
-        binding.tvLapCountBadge.visibility = View.GONE
-        binding.btnCountdownPreset.visibility = View.GONE
-        binding.btnWallClockToggle.visibility = View.VISIBLE
-        binding.btnPlayPause.visibility = View.GONE
-        binding.btnReset.visibility = View.GONE
-
-        updateWallClockDisplay()
-        tickerHandler.post(tickerRunnable)
-    }
-
     // ==========================================
     // PRACTICE STOPWATCH LOGIC
     // ==========================================
 
     private fun onOptionTapped(option: OptionChoice) {
-        if (!isRunning || currentMode != ClockMode.STOPWATCH) return
+        if (!isRunning) return
+        if (currentMode != ClockMode.STOPWATCH && currentMode != ClockMode.COUNTDOWN) return
 
         triggerHapticFeedback()
 
@@ -653,13 +584,11 @@ class FloatingStopwatchService : Service() {
 
         binding.btnPlayPause.setImageResource(R.drawable.ic_play_arrow)
 
-        if (currentMode == ClockMode.STOPWATCH) {
-            lapAdapter.isPaused = true
-            updateMetricsBanner()
-            binding.layoutAccuracyBanner.visibility = View.VISIBLE
-            binding.layoutLapsDrawer.visibility = View.VISIBLE
-            binding.rvLaps.scrollToPosition(0)
-        }
+        lapAdapter.isPaused = true
+        updateMetricsBanner()
+        binding.layoutAccuracyBanner.visibility = View.VISIBLE
+        binding.layoutLapsDrawer.visibility = View.VISIBLE
+        binding.rvLaps.scrollToPosition(0)
     }
 
     private fun resetStopwatch() {
@@ -685,10 +614,22 @@ class FloatingStopwatchService : Service() {
     }
 
     private fun calculateCurrentElapsedMillis(): Long {
-        return if (isRunning) {
-            totalAccumulatedMillis + (SystemClock.elapsedRealtime() - baseStartTime)
-        } else {
-            totalAccumulatedMillis
+        return when (currentMode) {
+            ClockMode.COUNTDOWN -> {
+                if (isRunning) {
+                    val remaining = countdownRemainingMillis - (SystemClock.elapsedRealtime() - baseStartTime)
+                    (countdownTotalMillis - remaining).coerceAtLeast(0L)
+                } else {
+                    (countdownTotalMillis - countdownRemainingMillis).coerceAtLeast(0L)
+                }
+            }
+            else -> {
+                if (isRunning) {
+                    totalAccumulatedMillis + (SystemClock.elapsedRealtime() - baseStartTime)
+                } else {
+                    totalAccumulatedMillis
+                }
+            }
         }
     }
 
@@ -699,11 +640,6 @@ class FloatingStopwatchService : Service() {
 
         val split = elapsed - sessionManager.activeSplitBaseTimestamp
         updateActivePacingDisplay(split)
-    }
-
-    private fun updateSimpleDisplay() {
-        val elapsed = calculateCurrentElapsedMillis()
-        binding.tvTimerDisplay.text = formatFullStopwatchTime(elapsed, true)
     }
 
     private fun updateActivePacingDisplay(currentSplitMillis: Long) {
@@ -749,15 +685,32 @@ class FloatingStopwatchService : Service() {
     // ==========================================
 
     private fun cycleCountdownPreset() {
+        if (isRunning) return
         countdownPresetIndex = (countdownPresetIndex + 1) % countdownPresets.size
         countdownTotalMillis = countdownPresets[countdownPresetIndex]
-        resetCountdown()
-
+        countdownRemainingMillis = countdownTotalMillis
         val mins = countdownTotalMillis / 60000
+        binding.btnCountdownPresetChip.text = "${mins}m ▾"
+        resetCountdown()
         Toast.makeText(this, "Countdown set to ${mins}m", Toast.LENGTH_SHORT).show()
     }
 
+    private fun startCountdownWithPromptCheck() {
+        val shouldPrompt = prefs.getBoolean("pref_prompt_start_question_num", true)
+
+        if (shouldPrompt && (countdownRemainingMillis == countdownTotalMillis || countdownRemainingMillis == 0L) && sessionManager.responses.isEmpty()) {
+            binding.etInlineQuestionOffset.setText(sessionManager.startingQuestionOffset.toString())
+            binding.layoutInlinePrompt.visibility = View.VISIBLE
+
+            layoutParams.flags = layoutParams.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
+            safeUpdateViewLayout()
+        } else {
+            startCountdown()
+        }
+    }
+
     private fun startCountdown() {
+        loadPreferences()
         if (countdownRemainingMillis <= 0L) {
             countdownRemainingMillis = if (countdownTotalMillis > 0L) countdownTotalMillis else countdownPresets[countdownPresetIndex]
             countdownTotalMillis = countdownRemainingMillis
@@ -766,6 +719,9 @@ class FloatingStopwatchService : Service() {
         isRunning = true
         baseStartTime = SystemClock.elapsedRealtime()
         binding.btnPlayPause.setImageResource(R.drawable.ic_pause)
+        binding.layoutAccuracyBanner.visibility = View.GONE
+        binding.layoutInlinePrompt.visibility = View.GONE
+        lapAdapter.isPaused = false
 
         tickerHandler.post(tickerRunnable)
     }
@@ -780,19 +736,35 @@ class FloatingStopwatchService : Service() {
 
         tickerHandler.removeCallbacks(tickerRunnable)
         binding.btnPlayPause.setImageResource(R.drawable.ic_play_arrow)
+
+        lapAdapter.isPaused = true
+        updateMetricsBanner()
+        binding.layoutAccuracyBanner.visibility = View.VISIBLE
+        binding.layoutLapsDrawer.visibility = View.VISIBLE
+        binding.rvLaps.scrollToPosition(0)
     }
 
     private fun resetCountdown() {
         isRunning = false
         tickerHandler.removeCallbacks(tickerRunnable)
 
+        if (countdownTotalMillis <= 0L) {
+            countdownTotalMillis = countdownPresets[countdownPresetIndex]
+        }
         countdownRemainingMillis = countdownTotalMillis
         binding.btnPlayPause.setImageResource(R.drawable.ic_play_arrow)
-        binding.tvTimerDisplay.text = if (countdownRemainingMillis > 0L) {
-            formatCountdownTime(countdownRemainingMillis)
-        } else {
-            "00:00:00.0"
-        }
+        binding.tvTimerDisplay.text = formatCountdownTime(countdownRemainingMillis)
+
+        sessionManager.reset()
+        lapAdapter.submitList(emptyList())
+        lapAdapter.isPaused = false
+
+        binding.layoutAccuracyBanner.visibility = View.GONE
+        binding.layoutInlinePrompt.visibility = View.GONE
+        binding.tvLapCountBadge.text = "0"
+        binding.tvNoLaps.visibility = View.VISIBLE
+
+        updateActivePacingDisplay(0L)
     }
 
     private fun updateCountdownTicker() {
@@ -806,8 +778,17 @@ class FloatingStopwatchService : Service() {
             binding.btnPlayPause.setImageResource(R.drawable.ic_play_arrow)
             triggerHapticFeedback()
             Toast.makeText(this, "Countdown Finished!", Toast.LENGTH_SHORT).show()
+
+            lapAdapter.isPaused = true
+            updateMetricsBanner()
+            binding.layoutAccuracyBanner.visibility = View.VISIBLE
+            binding.layoutLapsDrawer.visibility = View.VISIBLE
+            binding.rvLaps.scrollToPosition(0)
         } else {
             binding.tvTimerDisplay.text = formatCountdownTime(remaining)
+            val currentElapsed = (countdownTotalMillis - remaining).coerceAtLeast(0L)
+            val split = (currentElapsed - sessionManager.activeSplitBaseTimestamp).coerceAtLeast(0L)
+            updateActivePacingDisplay(split)
         }
     }
 
@@ -817,21 +798,11 @@ class FloatingStopwatchService : Service() {
         val minutes = (totalSeconds % 3600) / 60
         val seconds = totalSeconds % 60
         val tenths = (millis % 1000) / 100
-        return String.format(Locale.US, "%02d:%02d:%02d.%d", hours, minutes, seconds, tenths)
-    }
-
-    // ==========================================
-    // WALL CLOCK LOGIC
-    // ==========================================
-
-    private fun updateWallClockDisplay() {
-        val now = Date()
-        val pattern = if (is24HourFormat) "HH:mm:ss" else "hh:mm:ss"
-        val timeFormatter = SimpleDateFormat(pattern, Locale.getDefault())
-        binding.tvTimerDisplay.text = timeFormatter.format(now)
-
-        val dateFormatter = SimpleDateFormat("dd MMMM yyyy", Locale.getDefault())
-        binding.tvTimerSubtext.text = dateFormatter.format(now)
+        return if (hours > 0) {
+            String.format(Locale.US, "%02d:%02d:%02d.%d", hours, minutes, seconds, tenths)
+        } else {
+            String.format(Locale.US, "%02d:%02d.%d", minutes, seconds, tenths)
+        }
     }
 
     // ==========================================
