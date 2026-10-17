@@ -206,7 +206,7 @@ class FloatingStopwatchService : Service() {
 
     @SuppressLint("ClickableViewAccessibility")
     private fun inflateOverlayWindow() {
-        val themedContext = ContextThemeWrapper(this, R.style.Theme_PracticeTimer_M3)
+        val themedContext = ContextThemeWrapper(this, R.style.Theme_PracticeTimer_Overlay)
         binding = LayoutFloatingStopwatchBinding.inflate(LayoutInflater.from(themedContext))
 
         val layoutType = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
@@ -222,11 +222,10 @@ class FloatingStopwatchService : Service() {
         val density = resources.displayMetrics.density
         val defaultWidth = (340 * density).toInt()
         val savedWidth = prefs.getInt("pref_overlay_width_px", defaultWidth)
-        val savedHeight = prefs.getInt("pref_overlay_height_px", WindowManager.LayoutParams.WRAP_CONTENT)
 
         layoutParams = WindowManager.LayoutParams(
             savedWidth,
-            savedHeight,
+            WindowManager.LayoutParams.WRAP_CONTENT,
             layoutType,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or screenOnFlag,
             PixelFormat.TRANSLUCENT
@@ -328,28 +327,21 @@ class FloatingStopwatchService : Service() {
         val screenHeight = displayMetrics.heightPixels
 
         val minWidth = (220 * density).toInt()
-        val minHeight = (110 * density).toInt()
         val maxWidth = (screenWidth * 0.90f).toInt()
-        val maxHeight = (screenHeight * 0.85f).toInt()
 
         binding.ivResizeHandle.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     startWidth = layoutParams.width
-                    startHeight = if (layoutParams.height > 0) layoutParams.height else binding.root.height
                     startTouchX = event.rawX
-                    startTouchY = event.rawY
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
                     val deltaX = (event.rawX - startTouchX).toInt()
-                    val deltaY = (event.rawY - startTouchY).toInt()
-
                     val newWidth = (startWidth + deltaX).coerceIn(minWidth, maxWidth)
-                    val newHeight = (startHeight + deltaY).coerceIn(minHeight, maxHeight)
 
                     layoutParams.width = newWidth
-                    layoutParams.height = newHeight
+                    layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT
                     windowManager.updateViewLayout(binding.root, layoutParams)
                     scaleTypography(newWidth)
                     true
@@ -357,7 +349,7 @@ class FloatingStopwatchService : Service() {
                 MotionEvent.ACTION_UP -> {
                     prefs.edit()
                         .putInt("pref_overlay_width_px", layoutParams.width)
-                        .putInt("pref_overlay_height_px", layoutParams.height)
+                        .remove("pref_overlay_height_px")
                         .apply()
                     true
                 }
@@ -370,16 +362,13 @@ class FloatingStopwatchService : Service() {
                 val scale = detector.scaleFactor
                 val newWidth = (layoutParams.width * scale).toInt().coerceIn(minWidth, maxWidth)
                 layoutParams.width = newWidth
-
-                val currentHeight = if (layoutParams.height > 0) layoutParams.height else binding.root.height
-                val newHeight = (currentHeight * scale).toInt().coerceIn(minHeight, maxHeight)
-                layoutParams.height = newHeight
+                layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT
 
                 windowManager.updateViewLayout(binding.root, layoutParams)
                 scaleTypography(newWidth)
                 prefs.edit()
                     .putInt("pref_overlay_width_px", newWidth)
-                    .putInt("pref_overlay_height_px", newHeight)
+                    .remove("pref_overlay_height_px")
                     .apply()
                 return true
             }

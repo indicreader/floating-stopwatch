@@ -5,18 +5,18 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/card_floating_container"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     app:cardCornerRadius="16dp"
     app:cardElevation="8dp"
     app:strokeWidth="0dp"
-    app:cardBackgroundColor="?attr/colorSurfaceContainerHigh">
+    app:cardBackgroundColor="#CC121212">
 
     <LinearLayout
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
+        android:layout_height="wrap_content"
         android:orientation="vertical">
 
-        <!-- Top Accent Bar (eliminated for borderless Material You look) -->
+        <!-- Top Accent Bar (eliminated per user request) -->
         <View
             android:id="@+id/view_top_accent_bar"
             android:layout_width="match_parent"
@@ -26,8 +26,7 @@
         <LinearLayout
             android:id="@+id/layout_content_body"
             android:layout_width="match_parent"
-            android:layout_height="0dp"
-            android:layout_weight="1"
+            android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingHorizontal="12dp"
             android:paddingTop="8dp"
@@ -313,57 +312,64 @@
                 android:id="@+id/layout_option_buttons"
                 layout="@layout/layout_option_buttons" />
 
-            <!-- 7. Action Controls Row Matching Original Circular Buttons -->
-            <RelativeLayout
+            <!-- 7. Row 3: Compact 3-Button Action Controls Bar (Play/Pause, Reset, Logs/Expand) -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:layout_marginTop="4dp">
+                android:layout_marginTop="6dp"
+                android:orientation="horizontal"
+                android:gravity="center_vertical"
+                android:weightSum="3">
 
-                <!-- Circular Play / Pause Button matching original app -->
-                <ImageButton
-                    android:id="@+id/btn_play_pause"
-                    android:layout_width="44dp"
-                    android:layout_height="44dp"
-                    android:layout_alignParentStart="true"
-                    android:layout_centerVertical="true"
-                    android:background="@drawable/bg_circle_primary"
-                    android:src="@drawable/ic_play_arrow"
-                    android:contentDescription="Start or Pause Stopwatch"
-                    app:tint="#0C1D17" />
-
-                <!-- Reset Button in middle -->
+                <!-- Button 1: Play / Pause -->
                 <LinearLayout
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_centerInParent="true"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
+                    android:layout_weight="1"
+                    android:gravity="center">
+
+                    <ImageButton
+                        android:id="@+id/btn_play_pause"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:scaleType="centerInside"
+                        android:background="@drawable/bg_circle_primary"
+                        android:src="@drawable/ic_play_arrow"
+                        android:contentDescription="Start or Pause Stopwatch"
+                        app:tint="#0C1D17" />
+                </LinearLayout>
+
+                <!-- Button 2: Reset -->
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:gravity="center">
 
                     <ImageButton
                         android:id="@+id/btn_reset"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:scaleType="centerInside"
                         android:background="@drawable/bg_circle_secondary"
                         android:src="@drawable/ic_restart"
                         android:contentDescription="Reset Stopwatch"
                         app:tint="#E6ECE9" />
-
                 </LinearLayout>
 
-                <!-- Circular Laps / Preset Button on Right matching original app -->
+                <!-- Button 3: Logs / Expand -->
                 <LinearLayout
-                    android:layout_width="wrap_content"
+                    android:layout_width="0dp"
                     android:layout_height="wrap_content"
-                    android:layout_alignParentEnd="true"
-                    android:layout_centerVertical="true"
-                    android:orientation="horizontal"
-                    android:gravity="center_vertical">
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:orientation="horizontal">
 
                     <TextView
                         android:id="@+id/tv_lap_count_badge"
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
-                        android:layout_marginEnd="6dp"
+                        android:layout_marginEnd="4dp"
                         android:text="0"
                         android:fontFamily="monospace"
                         android:textSize="11sp"
@@ -372,8 +378,9 @@
                     <!-- Stopwatch Mode: Laps Toggle -->
                     <ImageButton
                         android:id="@+id/btn_toggle_laps"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:scaleType="centerInside"
                         android:background="@drawable/bg_circle_secondary"
                         android:src="@drawable/ic_calendar_laps"
                         android:contentDescription="Toggle Lap List Drawer"
@@ -382,8 +389,9 @@
                     <!-- Countdown Mode: Preset Stepper Cycle Button -->
                     <ImageButton
                         android:id="@+id/btn_countdown_preset"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:scaleType="centerInside"
                         android:background="@drawable/bg_circle_secondary"
                         android:src="@drawable/ic_hourglass"
                         android:contentDescription="Cycle Countdown Duration"
@@ -393,17 +401,17 @@
                     <!-- Wall Clock Mode: 12h/24h Toggle Button -->
                     <ImageButton
                         android:id="@+id/btn_wall_clock_toggle"
-                        android:layout_width="40dp"
-                        android:layout_height="40dp"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:scaleType="centerInside"
                         android:background="@drawable/bg_circle_secondary"
                         android:src="@drawable/ic_access_time"
                         android:contentDescription="Toggle 12h or 24h format"
                         android:visibility="gone"
                         app:tint="#FF5252" />
-
                 </LinearLayout>
 
-            </RelativeLayout>
+            </LinearLayout>
 
             <!-- 8. Expandable Lap / Response Drawer -->
             <LinearLayout
@@ -505,9 +513,9 @@
                 android:layout_alignParentEnd="true"
                 android:layout_centerVertical="true"
                 android:padding="2dp"
-                android:src="@drawable/ic_resize"
+                android:src="@drawable/ic_resize_grip"
                 android:contentDescription="Drag to resize window"
-                app:tint="?attr/colorOnSurfaceVariant" />
+                app:tint="#859990" />
 
         </RelativeLayout>
 

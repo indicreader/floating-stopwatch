@@ -38,4 +38,27 @@
     <style name="Widget.PracticeTimer.Toolbar" parent="Widget.Material3.Toolbar">
         <item name="titleTextAppearance">?attr/textAppearanceTitleLarge</item>
     </style>
+
+    <!-- Dark Translucent Overlay Window Theme (Independent of System Day/Night Mode) -->
+    <style name="Theme.PracticeTimer.Overlay" parent="Theme.Material3.Dark.NoActionBar">
+        <item name="colorPrimary">@color/md_theme_dark_primary</item>
+        <item name="colorOnPrimary">@color/md_theme_dark_onPrimary</item>
+        <item name="colorPrimaryContainer">@color/md_theme_dark_primaryContainer</item>
+        <item name="colorOnPrimaryContainer">@color/md_theme_dark_onPrimaryContainer</item>
+
+        <item name="colorSecondary">@color/md_theme_dark_secondary</item>
+        <item name="colorOnSecondary">@color/md_theme_dark_onSecondary</item>
+        <item name="colorSecondaryContainer">@color/md_theme_dark_secondaryContainer</item>
+        <item name="colorOnSecondaryContainer">@color/md_theme_dark_onSecondaryContainer</item>
+
+        <item name="colorError">@color/md_theme_dark_error</item>
+        <item name="colorOnError">@color/md_theme_dark_onError</item>
+        <item name="colorErrorContainer">@color/md_theme_dark_errorContainer</item>
+        <item name="colorOnErrorContainer">@color/md_theme_dark_onErrorContainer</item>
+
+        <item name="colorSurface">#121212</item>
+        <item name="colorOnSurface">#E6ECE9</item>
+        <item name="colorSurfaceContainer">#CC1E2022</item>
+        <item name="colorSurfaceContainerHigh">#CC242826</item>
+    </style>
 </resources>
