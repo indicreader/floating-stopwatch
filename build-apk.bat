@@ -9,5 +9,5 @@ if %ERRORLEVEL% NEQ 0 (
 )
 if not exist "release" mkdir release
 copy /Y "app\build\outputs\apk\release\*.apk" "release\"
-powershell -NoProfile -Command "$json = Get-Content 'app\build\outputs\apk\release\output-metadata.json' | ConvertFrom-Json; $ver = $json.elements[0].versionName; Copy-Item 'app\build\outputs\apk\release\app-release.apk' \"release\PracticeTimerOverlay-v$ver.apk\" -Force; Write-Host \"[SUCCESS] Saved release\PracticeTimerOverlay-v$ver.apk\""
-echo [SUCCESS] Release build completed. Artifacts saved to \release
+powershell -NoProfile -Command "$json = Get-Content 'app\build\outputs\apk\release\output-metadata.json' | ConvertFrom-Json; $ver = $json.elements[0].versionName; Copy-Item 'app\build\outputs\apk\release\app-release.apk' \"release\PracticeTimerOverlay-v$ver.apk\" -Force; Write-Host \"[SUCCESS] Saved release\PracticeTimerOverlay-v$ver.apk\"; git add -A; $status = git status --porcelain; if ($status) { git commit -m \"Release v$ver\"; }; git push origin main; git tag -a \"v$ver\" -m \"Release v$ver\" -f; git push origin \"v$ver\" --force; Write-Host \"[SUCCESS] Pushed release v$ver to GitHub\""
+echo [SUCCESS] Release build completed and pushed to GitHub.
