@@ -16,12 +16,15 @@
     <!-- Question Number Index -->
     <TextView
         android:id="@+id/tv_question_index"
-        android:layout_width="46dp"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:minWidth="46dp"
+        android:gravity="center"
+        android:background="@drawable/badge_question_number"
         tools:text="Q101"
         android:fontFamily="monospace"
-        android:textAppearance="?attr/textAppearanceLabelLarge"
-        android:textColor="?attr/colorOnSurface"
+        android:textSize="12sp"
+        android:textColor="#FFFFFF"
         android:textStyle="bold" />
 
     <!-- Option / Skip Badge -->
