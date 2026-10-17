@@ -10,6 +10,7 @@ import android.app.Service
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.ServiceInfo
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.PixelFormat
@@ -159,11 +160,13 @@ class FloatingStopwatchService : Service() {
             else -> ClockMode.STOPWATCH
         }
 
-        currentMode = newMode
+        if (newMode != currentMode) {
+            currentMode = newMode
+            applyModeConfiguration()
+        }
         prefs.edit().putString("pref_last_clock_mode", modeKey).apply()
 
-        applyModeConfiguration()
-        return START_NOT_STICKY
+        return START_STICKY
     }
 
     private fun loadPreferences() {
@@ -201,7 +204,11 @@ class FloatingStopwatchService : Service() {
             .setOngoing(true)
             .build()
 
-        startForeground(1001, notification)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            startForeground(1001, notification, ServiceInfo.FOREGROUND_SERVICE_TYPE_SPECIAL_USE)
+        } else {
+            startForeground(1001, notification)
+        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -218,6 +225,8 @@ class FloatingStopwatchService : Service() {
 
         val keepScreenOn = prefs.getBoolean("pref_keep_screen_on", false)
         val screenOnFlag = if (keepScreenOn) WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON else 0
+        @Suppress("DEPRECATION")
+        val lockScreenFlag = WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED
 
         val density = resources.displayMetrics.density
         val defaultWidth = (340 * density).toInt()
@@ -227,7 +236,7 @@ class FloatingStopwatchService : Service() {
             savedWidth,
             WindowManager.LayoutParams.WRAP_CONTENT,
             layoutType,
-            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or screenOnFlag,
+            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or screenOnFlag or lockScreenFlag,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
@@ -235,8 +244,8 @@ class FloatingStopwatchService : Service() {
             y = 160
         }
 
-        setupDragTouchListener()
         setupResizeListener()
+        setupDragTouchListener()
         setupLapRecyclerView()
         setupOptionButtons()
         setupControlButtons()
@@ -244,7 +253,9 @@ class FloatingStopwatchService : Service() {
         applyPreferences()
         scaleTypography(savedWidth)
 
-        windowManager.addView(binding.root, layoutParams)
+        try {
+            windowManager.addView(binding.root, layoutParams)
+        } catch (_: Exception) {}
         applyModeConfiguration()
     }
 
@@ -280,7 +291,7 @@ class FloatingStopwatchService : Service() {
                 MotionEvent.ACTION_MOVE -> {
                     layoutParams.x = initialX + (event.rawX - initialTouchX).toInt()
                     layoutParams.y = initialY + (event.rawY - initialTouchY).toInt()
-                    windowManager.updateViewLayout(binding.root, layoutParams)
+                    safeUpdateViewLayout()
                     true
                 }
                 MotionEvent.ACTION_UP -> {
@@ -289,7 +300,7 @@ class FloatingStopwatchService : Service() {
                         val screenWidth = resources.displayMetrics.widthPixels
                         val middle = screenWidth / 2
                         layoutParams.x = if (layoutParams.x + (binding.root.width / 2) < middle) 16 else screenWidth - binding.root.width - 16
-                        windowManager.updateViewLayout(binding.root, layoutParams)
+                        safeUpdateViewLayout()
                     }
                     true
                 }
@@ -342,7 +353,7 @@ class FloatingStopwatchService : Service() {
 
                     layoutParams.width = newWidth
                     layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT
-                    windowManager.updateViewLayout(binding.root, layoutParams)
+                    safeUpdateViewLayout()
                     scaleTypography(newWidth)
                     true
                 }
@@ -364,7 +375,7 @@ class FloatingStopwatchService : Service() {
                 layoutParams.width = newWidth
                 layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT
 
-                windowManager.updateViewLayout(binding.root, layoutParams)
+                safeUpdateViewLayout()
                 scaleTypography(newWidth)
                 prefs.edit()
                     .putInt("pref_overlay_width_px", newWidth)
@@ -467,7 +478,7 @@ class FloatingStopwatchService : Service() {
             binding.layoutInlinePrompt.visibility = View.GONE
 
             layoutParams.flags = layoutParams.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-            windowManager.updateViewLayout(binding.root, layoutParams)
+            safeUpdateViewLayout()
 
             startStopwatch()
         }
@@ -476,9 +487,7 @@ class FloatingStopwatchService : Service() {
     private fun applyPreferences() {
         val fontSizeSp = prefs.getString("pref_font_size", "32")?.toFloatOrNull() ?: 32f
         binding.tvTimerDisplay.textSize = fontSizeSp
-
-        val opacityPercent = prefs.getString("pref_clock_opacity", "90")?.toIntOrNull() ?: 90
-        binding.cardFloatingContainer.alpha = opacityPercent / 100f
+        binding.cardFloatingContainer.alpha = 1.0f
     }
 
     /**
@@ -616,7 +625,7 @@ class FloatingStopwatchService : Service() {
             binding.layoutInlinePrompt.visibility = View.VISIBLE
 
             layoutParams.flags = layoutParams.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
-            windowManager.updateViewLayout(binding.root, layoutParams)
+            safeUpdateViewLayout()
         } else {
             startStopwatch()
         }
@@ -876,11 +885,21 @@ class FloatingStopwatchService : Service() {
         }
     }
 
+    private fun safeUpdateViewLayout() {
+        try {
+            if (::binding.isInitialized && binding.root.isAttachedToWindow) {
+                windowManager.updateViewLayout(binding.root, layoutParams)
+            }
+        } catch (_: Exception) {}
+    }
+
     override fun onDestroy() {
         super.onDestroy()
         tickerHandler.removeCallbacks(tickerRunnable)
-        if (::binding.isInitialized && binding.root.windowToken != null) {
-            windowManager.removeView(binding.root)
-        }
+        try {
+            if (::binding.isInitialized && binding.root.isAttachedToWindow) {
+                windowManager.removeView(binding.root)
+            }
+        } catch (_: Exception) {}
     }
 }

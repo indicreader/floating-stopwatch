@@ -62,15 +62,11 @@ class LapAdapter(
             if (item.selectedOption == OptionChoice.SKIP) {
                 binding.tvSelectedOption.text = "SKP"
                 binding.tvSelectedOption.setBackgroundResource(R.drawable.bg_badge_skip)
-                binding.tvSelectedOption.setTextColor(
-                    ContextCompat.getColor(context, R.color.md_theme_light_onSecondaryContainer)
-                )
+                binding.tvSelectedOption.setTextColor(Color.parseColor("#CFD8DC"))
             } else {
                 binding.tvSelectedOption.text = item.selectedOption.label
                 binding.tvSelectedOption.setBackgroundResource(R.drawable.bg_badge_option)
-                binding.tvSelectedOption.setTextColor(
-                    ContextCompat.getColor(context, R.color.md_theme_light_onSecondaryContainer)
-                )
+                binding.tvSelectedOption.setTextColor(Color.WHITE)
             }
 
             // Split duration & overtime spike tag

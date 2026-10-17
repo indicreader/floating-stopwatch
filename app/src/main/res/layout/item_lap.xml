@@ -35,7 +35,7 @@
         tools:text="B"
         android:textSize="13sp"
         android:textStyle="bold"
-        android:textColor="?attr/colorOnSecondaryContainer" />
+        android:textColor="#FFFFFF" />
 
     <!-- Timing Block: Split delta & Overtime Tag -->
     <LinearLayout
