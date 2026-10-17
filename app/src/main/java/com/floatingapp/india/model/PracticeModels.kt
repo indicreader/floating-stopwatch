@@ -11,6 +11,8 @@ enum class OptionChoice(val label: String) {
     B("B"),
     C("C"),
     D("D"),
+    E("E"),
+    F("F"),
     SKIP("SKIP");
 
     fun getDisplayLabel(isNumeric: Boolean): String {
@@ -19,6 +21,8 @@ enum class OptionChoice(val label: String) {
             B -> if (isNumeric) "2" else "B"
             C -> if (isNumeric) "3" else "C"
             D -> if (isNumeric) "4" else "D"
+            E -> if (isNumeric) "5" else "E"
+            F -> if (isNumeric) "6" else "F"
             SKIP -> "SKIP"
         }
     }
@@ -43,7 +47,8 @@ data class QuestionResponse(
     val splitDurationMillis: Long,               // Delta duration since last lap/start
     val cumulativeTimeMillis: Long,              // Total stopwatch elapsed time at moment of tap
     val targetDurationSeconds: Int = 30,         // Target pacing budget in seconds
-    var verificationStatus: VerificationStatus = if (selectedOption == OptionChoice.SKIP) VerificationStatus.SKIPPED else VerificationStatus.UNVERIFIED
+    var verificationStatus: VerificationStatus = if (selectedOption == OptionChoice.SKIP) VerificationStatus.SKIPPED else VerificationStatus.UNVERIFIED,
+    var isFlagged: Boolean = false               // Mark-for-review flag
 ) {
     val isOvertime: Boolean
         get() = splitDurationMillis > (targetDurationSeconds * 1000L)
@@ -83,11 +88,21 @@ data class SessionMetrics(
     val totalAnswered: Int = 0,
     val totalCorrect: Int = 0,
     val totalIncorrect: Int = 0,
-    val totalSkipped: Int = 0
+    val totalSkipped: Int = 0,
+    val totalFlagged: Int = 0,
+    val topTimeSinks: List<QuestionResponse> = emptyList()
 ) {
     val formattedAvgCorrect: String
         get() = if (totalCorrect > 0) QuestionResponse.formatSecondsDisplay(averageCorrectMillis) else "—"
 
     val formattedAvgIncorrect: String
         get() = if (totalIncorrect > 0) QuestionResponse.formatSecondsDisplay(averageIncorrectMillis) else "—"
+
+    fun calculateNetScore(markCorrect: Float, markNegative: Float): Float {
+        return (totalCorrect * markCorrect) - (totalIncorrect * markNegative)
+    }
+
+    fun calculateMaxPossibleScore(markCorrect: Float): Float {
+        return (totalAnswered + totalSkipped) * markCorrect
+    }
 }

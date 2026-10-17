@@ -29,6 +29,19 @@
         <item>numbers</item>
     </string-array>
 
+    <!-- Option Count (4, 5, or 6 options) -->
+    <string-array name="pref_option_count_entries">
+        <item>4 Options (A-D / 1-4) [Default]</item>
+        <item>5 Options (A-E / 1-5)</item>
+        <item>6 Options (A-F / 1-6)</item>
+    </string-array>
+
+    <string-array name="pref_option_count_values">
+        <item>4</item>
+        <item>5</item>
+        <item>6</item>
+    </string-array>
+
     <!-- Accent Color -->
     <string-array name="pref_accent_color_entries">
         <item>Mint Teal (Default)</item>

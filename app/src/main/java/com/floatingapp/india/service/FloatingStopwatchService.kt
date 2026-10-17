@@ -42,6 +42,10 @@ import com.floatingapp.india.model.OptionChoice
 import com.floatingapp.india.model.QuestionResponse
 import com.floatingapp.india.ui.lap.LapAdapter
 import com.floatingapp.india.ui.settings.SettingsActivity
+import android.graphics.Typeface
+import android.widget.LinearLayout
+import android.widget.TextView
+import com.floatingapp.india.model.VerificationStatus
 import java.util.Locale
 
 /**
@@ -406,7 +410,28 @@ class FloatingStopwatchService : Service() {
         optionsLayout.btnOptionB.setOnClickListener { onOptionTapped(OptionChoice.B) }
         optionsLayout.btnOptionC.setOnClickListener { onOptionTapped(OptionChoice.C) }
         optionsLayout.btnOptionD.setOnClickListener { onOptionTapped(OptionChoice.D) }
+        optionsLayout.btnOptionE.setOnClickListener { onOptionTapped(OptionChoice.E) }
+        optionsLayout.btnOptionF.setOnClickListener { onOptionTapped(OptionChoice.F) }
         optionsLayout.btnOptionSkip.setOnClickListener { onOptionTapped(OptionChoice.SKIP) }
+
+        // Long press immediate override of last lap
+        optionsLayout.btnOptionA.setOnLongClickListener { onOptionLongPressed(OptionChoice.A) }
+        optionsLayout.btnOptionB.setOnLongClickListener { onOptionLongPressed(OptionChoice.B) }
+        optionsLayout.btnOptionC.setOnLongClickListener { onOptionLongPressed(OptionChoice.C) }
+        optionsLayout.btnOptionD.setOnLongClickListener { onOptionLongPressed(OptionChoice.D) }
+        optionsLayout.btnOptionE.setOnLongClickListener { onOptionLongPressed(OptionChoice.E) }
+        optionsLayout.btnOptionF.setOnLongClickListener { onOptionLongPressed(OptionChoice.F) }
+    }
+
+    private fun onOptionLongPressed(option: OptionChoice): Boolean {
+        val updated = sessionManager.overrideLastLapOption(option)
+        if (updated != null) {
+            triggerHapticFeedback()
+            lapAdapter.submitList(sessionManager.responses.map { it.copy() })
+            Toast.makeText(this, "Overrode Q${updated.questionNumber} to ${option.label}", Toast.LENGTH_SHORT).show()
+            return true
+        }
+        return false
     }
 
     private fun setupControlButtons() {
@@ -500,11 +525,18 @@ class FloatingStopwatchService : Service() {
         val optionFormat = prefs.getString("pref_option_format", "letters") ?: "letters"
         val isNumeric = optionFormat == "numbers"
 
+        val optionCount = prefs.getString("pref_option_count", "4")?.toIntOrNull() ?: 4
+
         val optionsLayout = binding.layoutOptionButtons
+        optionsLayout.btnOptionE.visibility = if (optionCount >= 5) View.VISIBLE else View.GONE
+        optionsLayout.btnOptionF.visibility = if (optionCount >= 6) View.VISIBLE else View.GONE
+
         optionsLayout.btnOptionA.text = if (isNumeric) "1" else "A"
         optionsLayout.btnOptionB.text = if (isNumeric) "2" else "B"
         optionsLayout.btnOptionC.text = if (isNumeric) "3" else "C"
         optionsLayout.btnOptionD.text = if (isNumeric) "4" else "D"
+        optionsLayout.btnOptionE.text = if (isNumeric) "5" else "E"
+        optionsLayout.btnOptionF.text = if (isNumeric) "6" else "F"
 
         if (::lapAdapter.isInitialized) {
             lapAdapter.isNumericOptionFormat = isNumeric
@@ -654,6 +686,7 @@ class FloatingStopwatchService : Service() {
         lapAdapter.isPaused = false
 
         binding.layoutAccuracyBanner.visibility = View.GONE
+        binding.cardTopTimeSinks.visibility = View.GONE
         binding.layoutInlinePrompt.visibility = View.GONE
         binding.tvLapCountBadge.text = "0"
         binding.tvNoLaps.visibility = View.VISIBLE
@@ -720,19 +753,111 @@ class FloatingStopwatchService : Service() {
     private fun updateMetricsBanner() {
         val metrics = sessionManager.calculateMetrics()
 
-        binding.tvMetricAccuracy.text = "${metrics.accuracyPercentage}%"
+        val enableNetMarks = prefs.getBoolean("pref_enable_net_marks", false)
+        if (enableNetMarks) {
+            val markCorrect = prefs.getString("pref_mark_correct", "2.0")?.toFloatOrNull() ?: 2.0f
+            val markNegative = prefs.getString("pref_mark_negative", "0.5")?.toFloatOrNull() ?: 0.5f
+            val netScore = metrics.calculateNetScore(markCorrect, markNegative)
+            val maxScore = metrics.calculateMaxPossibleScore(markCorrect)
+
+            binding.tvMetricAccuracy.text = "${metrics.accuracyPercentage}%"
+            binding.tvMetricBreakdown.text = String.format(
+                Locale.US,
+                "[%s] • Score: %.1f/%.1f | Accuracy: %d%% (%d/%d)",
+                drillTagRepo.getFormattedSessionTag(),
+                netScore,
+                maxScore,
+                metrics.accuracyPercentage,
+                metrics.totalCorrect,
+                metrics.totalAnswered
+            )
+        } else {
+            binding.tvMetricAccuracy.text = "${metrics.accuracyPercentage}%"
+            binding.tvMetricBreakdown.text = String.format(
+                Locale.US,
+                "[%s] • %d Solved • %d Correct • %d Wrong • %d Skipped",
+                drillTagRepo.getFormattedSessionTag(),
+                metrics.totalAnswered,
+                metrics.totalCorrect,
+                metrics.totalIncorrect,
+                metrics.totalSkipped
+            )
+        }
+
         binding.tvMetricAvgCorrect.text = metrics.formattedAvgCorrect
         binding.tvMetricAvgIncorrect.text = metrics.formattedAvgIncorrect
 
-        binding.tvMetricBreakdown.text = String.format(
-            Locale.US,
-            "[%s] • %d Solved • %d Correct • %d Wrong • %d Skipped",
-            drillTagRepo.getFormattedSessionTag(),
-            metrics.totalAnswered,
-            metrics.totalCorrect,
-            metrics.totalIncorrect,
-            metrics.totalSkipped
-        )
+        // Top Time-Sink Outliers ("Top Bottlenecks")
+        if (metrics.topTimeSinks.isNotEmpty()) {
+            binding.cardTopTimeSinks.visibility = View.VISIBLE
+            binding.layoutTimeSinksContainer.removeAllViews()
+
+            if (metrics.totalFlagged > 0) {
+                binding.tvReviewNeededBadge.visibility = View.VISIBLE
+                binding.tvReviewNeededBadge.text = "Review Needed: ${metrics.totalFlagged} Qs"
+            } else {
+                binding.tvReviewNeededBadge.visibility = View.GONE
+            }
+
+            for (outlier in metrics.topTimeSinks) {
+                val row = LinearLayout(this).apply {
+                    orientation = LinearLayout.HORIZONTAL
+                    gravity = Gravity.CENTER_VERTICAL
+                    setPadding(0, 4, 0, 4)
+                }
+
+                val tvLabel = TextView(this).apply {
+                    val optLabel = if (outlier.selectedOption == OptionChoice.SKIP) "Skip" else outlier.selectedOption.label
+                    text = "Q${outlier.questionNumber} — $optLabel"
+                    textSize = 12f
+                    setTypeface(null, Typeface.BOLD)
+                    setTextColor(Color.WHITE)
+                    layoutParams = LinearLayout.LayoutParams(0, LinearLayout.LayoutParams.WRAP_CONTENT, 1f)
+                }
+
+                val tvDuration = TextView(this).apply {
+                    text = "(${outlier.formattedSplit})"
+                    textSize = 12f
+                    setTypeface(Typeface.MONOSPACE, Typeface.BOLD)
+                    setTextColor(Color.parseColor("#FFB74D"))
+                    setPadding(12, 0, 12, 0)
+                }
+
+                val tvStatus = TextView(this).apply {
+                    when (outlier.verificationStatus) {
+                        VerificationStatus.CORRECT -> {
+                            text = "✔"
+                            setTextColor(Color.parseColor("#00E676"))
+                            textSize = 13f
+                            setTypeface(null, Typeface.BOLD)
+                        }
+                        VerificationStatus.INCORRECT -> {
+                            text = "✖"
+                            setTextColor(Color.parseColor("#FF5252"))
+                            textSize = 13f
+                            setTypeface(null, Typeface.BOLD)
+                        }
+                        VerificationStatus.SKIPPED -> {
+                            text = "[Skipped]"
+                            setTextColor(Color.parseColor("#859990"))
+                            textSize = 11f
+                        }
+                        else -> {
+                            text = "—"
+                            setTextColor(Color.parseColor("#859990"))
+                            textSize = 12f
+                        }
+                    }
+                }
+
+                row.addView(tvLabel)
+                row.addView(tvDuration)
+                row.addView(tvStatus)
+                binding.layoutTimeSinksContainer.addView(row)
+            }
+        } else {
+            binding.cardTopTimeSinks.visibility = View.GONE
+        }
     }
 
     // ==========================================

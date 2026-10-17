@@ -27,6 +27,16 @@
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false" />
 
+        <ListPreference
+            android:key="pref_option_count"
+            android:title="Option Count per Question"
+            android:dialogTitle="Select Option Count"
+            android:entries="@array/pref_option_count_entries"
+            android:entryValues="@array/pref_option_count_values"
+            android:defaultValue="4"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false" />
+
         <SwitchPreferenceCompat
             android:key="pref_prompt_start_question_num"
             android:title="@string/pref_prompt_start_question_num_title"
@@ -46,6 +56,31 @@
             android:title="@string/pref_haptic_feedback_title"
             android:summary="@string/pref_haptic_feedback_summary"
             android:defaultValue="true"
+            app:iconSpaceReserved="false" />
+
+        <SwitchPreferenceCompat
+            android:key="pref_enable_net_marks"
+            android:title="Enable Net Competitive Exam Marks"
+            android:summary="Calculate net exam score using positive reward and negative penalty (default: OFF)"
+            android:defaultValue="false"
+            app:iconSpaceReserved="false" />
+
+        <EditTextPreference
+            android:key="pref_mark_correct"
+            android:title="Marks for Correct Answer (+ve)"
+            android:dialogTitle="Enter marks per correct answer"
+            android:defaultValue="2.0"
+            app:dependency="pref_enable_net_marks"
+            app:useSimpleSummaryProvider="true"
+            app:iconSpaceReserved="false" />
+
+        <EditTextPreference
+            android:key="pref_mark_negative"
+            android:title="Negative Marks for Wrong Answer (-ve)"
+            android:dialogTitle="Enter penalty per incorrect answer"
+            android:defaultValue="0.5"
+            app:dependency="pref_enable_net_marks"
+            app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false" />
 
         <Preference

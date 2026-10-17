@@ -350,7 +350,65 @@
 
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- 6. Dedicated 5-Button Response Row (A, B, C, D, Skip) -->
+            <!-- 5b. Top Time-Sink Outliers ("Top Bottlenecks") -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_top_time_sinks"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="8dp"
+                android:visibility="gone"
+                tools:visibility="visible"
+                app:cardCornerRadius="12dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="#FFAB00"
+                app:cardBackgroundColor="#221C12">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="8dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical"
+                        android:layout_marginBottom="4dp">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="TOP TIME SINKS ⏳"
+                            android:letterSpacing="0.08"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:textColor="#FFB74D" />
+
+                        <TextView
+                            android:id="@+id/tv_review_needed_badge"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:textColor="#FFD54F"
+                            tools:text="Review: 2 Qs" />
+
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/layout_time_sinks_container"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- 6. Dedicated Dynamic Response Row (A, B, C, D, E, F, Skip) -->
             <include
                 android:id="@+id/layout_option_buttons"
                 layout="@layout/layout_option_buttons" />

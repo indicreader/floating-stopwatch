@@ -67,16 +67,66 @@ class PracticeSessionManager {
     }
 
     /**
+     * Updates recorded option for a question while preserving original split duration.
+     */
+    fun updateOption(questionNumber: Int, newOption: OptionChoice): QuestionResponse? {
+        val index = _responses.indexOfFirst { it.questionNumber == questionNumber }
+        if (index != -1) {
+            val current = _responses[index]
+            val newVerification = if (newOption == OptionChoice.SKIP) {
+                VerificationStatus.SKIPPED
+            } else if (current.verificationStatus == VerificationStatus.SKIPPED) {
+                VerificationStatus.UNVERIFIED
+            } else {
+                current.verificationStatus
+            }
+            val updated = current.copy(selectedOption = newOption, verificationStatus = newVerification)
+            _responses[index] = updated
+            return updated
+        }
+        return null
+    }
+
+    /**
+     * Toggles the bookmark/review flag for a question.
+     */
+    fun toggleFlag(questionNumber: Int): Boolean {
+        val index = _responses.indexOfFirst { it.questionNumber == questionNumber }
+        if (index != -1) {
+            val current = _responses[index]
+            val updated = current.copy(isFlagged = !current.isFlagged)
+            _responses[index] = updated
+            return updated.isFlagged
+        }
+        return false
+    }
+
+    /**
+     * Replaces the option of the last recorded lap (for immediate long-press correction during drill).
+     */
+    fun overrideLastLapOption(newOption: OptionChoice): QuestionResponse? {
+        if (_responses.isNotEmpty()) {
+            val last = _responses.last()
+            return updateOption(last.questionNumber, newOption)
+        }
+        return null
+    }
+
+    /**
      * Dynamically calculates headline accuracy, average times, and question counts.
      */
     fun calculateMetrics(): SessionMetrics {
         var correctCount = 0
         var incorrectCount = 0
         var skippedCount = 0
+        var flaggedCount = 0
         var correctDurationSum = 0L
         var incorrectDurationSum = 0L
 
         for (item in _responses) {
+            if (item.isFlagged) {
+                flaggedCount++
+            }
             when (item.verificationStatus) {
                 VerificationStatus.CORRECT -> {
                     correctCount++
@@ -102,6 +152,8 @@ class PracticeSessionManager {
         val avgCorrect = if (correctCount > 0) correctDurationSum / correctCount else 0L
         val avgIncorrect = if (incorrectCount > 0) incorrectDurationSum / incorrectCount else 0L
 
+        val topSinks = _responses.sortedByDescending { it.splitDurationMillis }.take(3)
+
         return SessionMetrics(
             accuracyPercentage = accuracy,
             averageCorrectMillis = avgCorrect,
@@ -109,7 +161,9 @@ class PracticeSessionManager {
             totalAnswered = _responses.size - skippedCount,
             totalCorrect = correctCount,
             totalIncorrect = incorrectCount,
-            totalSkipped = skippedCount
+            totalSkipped = skippedCount,
+            totalFlagged = flaggedCount,
+            topTimeSinks = topSinks
         )
     }
 
