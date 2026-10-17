@@ -48,7 +48,7 @@
 
         <item name="colorSecondary">@color/md_theme_dark_secondary</item>
         <item name="colorOnSecondary">@color/md_theme_dark_onSecondary</item>
-        <item name="colorSecondaryContainer">@color/md_theme_dark_secondaryContainer</item>
+        <item name="colorSecondaryContainer">#262A2E</item>
         <item name="colorOnSecondaryContainer">@color/md_theme_dark_onSecondaryContainer</item>
 
         <item name="colorError">@color/md_theme_dark_error</item>
@@ -56,9 +56,10 @@
         <item name="colorErrorContainer">@color/md_theme_dark_errorContainer</item>
         <item name="colorOnErrorContainer">@color/md_theme_dark_onErrorContainer</item>
 
-        <item name="colorSurface">#121212</item>
+        <item name="colorSurface">#12161A</item>
         <item name="colorOnSurface">#E6ECE9</item>
-        <item name="colorSurfaceContainer">#CC1E2022</item>
-        <item name="colorSurfaceContainerHigh">#CC242826</item>
+        <item name="colorSurfaceContainerLowest">#12161A</item>
+        <item name="colorSurfaceContainer">#1E2226</item>
+        <item name="colorSurfaceContainerHigh">#262A2E</item>
     </style>
 </resources>

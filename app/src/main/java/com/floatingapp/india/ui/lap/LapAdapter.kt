@@ -135,7 +135,7 @@ class LapAdapter(
                 val colorSurfaceContainer = MaterialColors.getColor(
                     binding.root,
                     com.google.android.material.R.attr.colorSurfaceContainer,
-                    Color.parseColor("#CC1E2022")
+                    Color.parseColor("#1E2226")
                 )
                 binding.itemContainer.setBackgroundColor(colorSurfaceContainer)
             }
@@ -151,17 +151,17 @@ class LapAdapter(
             val colorSurfaceContainer = MaterialColors.getColor(
                 root,
                 com.google.android.material.R.attr.colorSurfaceContainer,
-                Color.parseColor("#CC1E2022")
+                Color.parseColor("#1E2226")
             )
             val colorPrimaryContainer = MaterialColors.getColor(
                 root,
                 com.google.android.material.R.attr.colorPrimaryContainer,
-                Color.parseColor("#CC1B3B2B")
+                Color.parseColor("#1B3B2B")
             )
             val colorErrorContainer = MaterialColors.getColor(
                 root,
                 com.google.android.material.R.attr.colorErrorContainer,
-                Color.parseColor("#CC442020")
+                Color.parseColor("#442020")
             )
 
             // Skip: default to a neutral gray surface tint with both buttons unset
