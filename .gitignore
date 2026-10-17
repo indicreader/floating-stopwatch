@@ -23,6 +23,7 @@ local.properties
 .project
 .classpath
 .settings/
+*.code-workspace
 
 # Agent / Tooling configs
 .agent/

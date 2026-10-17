@@ -222,10 +222,11 @@ class FloatingStopwatchService : Service() {
         val density = resources.displayMetrics.density
         val defaultWidth = (340 * density).toInt()
         val savedWidth = prefs.getInt("pref_overlay_width_px", defaultWidth)
+        val savedHeight = prefs.getInt("pref_overlay_height_px", WindowManager.LayoutParams.WRAP_CONTENT)
 
         layoutParams = WindowManager.LayoutParams(
             savedWidth,
-            WindowManager.LayoutParams.WRAP_CONTENT,
+            savedHeight,
             layoutType,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or screenOnFlag,
             PixelFormat.TRANSLUCENT
@@ -300,7 +301,6 @@ class FloatingStopwatchService : Service() {
         // Attach touch listener across ALL surfaces so the user can drag from ANYWHERE
         binding.cardFloatingContainer.setOnTouchListener(touchListener)
         binding.layoutContentBody.setOnTouchListener(touchListener)
-        binding.viewTopAccentBar.setOnTouchListener(touchListener)
         binding.layoutDragHeader.setOnTouchListener(touchListener)
         binding.tvWindowTitle.setOnTouchListener(touchListener)
         binding.ivDragHandle.setOnTouchListener(touchListener)
@@ -318,29 +318,47 @@ class FloatingStopwatchService : Service() {
     @SuppressLint("ClickableViewAccessibility")
     private fun setupResizeListener() {
         var startWidth = 0
+        var startHeight = 0
         var startTouchX = 0f
-        val density = resources.displayMetrics.density
-        val screenWidth = resources.displayMetrics.widthPixels
+        var startTouchY = 0f
+
+        val displayMetrics = resources.displayMetrics
+        val density = displayMetrics.density
+        val screenWidth = displayMetrics.widthPixels
+        val screenHeight = displayMetrics.heightPixels
+
         val minWidth = (220 * density).toInt()
-        val maxWidth = screenWidth - (16 * density).toInt()
+        val minHeight = (110 * density).toInt()
+        val maxWidth = (screenWidth * 0.90f).toInt()
+        val maxHeight = (screenHeight * 0.85f).toInt()
 
         binding.ivResizeHandle.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     startWidth = layoutParams.width
+                    startHeight = if (layoutParams.height > 0) layoutParams.height else binding.root.height
                     startTouchX = event.rawX
+                    startTouchY = event.rawY
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
                     val deltaX = (event.rawX - startTouchX).toInt()
+                    val deltaY = (event.rawY - startTouchY).toInt()
+
                     val newWidth = (startWidth + deltaX).coerceIn(minWidth, maxWidth)
+                    val newHeight = (startHeight + deltaY).coerceIn(minHeight, maxHeight)
+
                     layoutParams.width = newWidth
+                    layoutParams.height = newHeight
                     windowManager.updateViewLayout(binding.root, layoutParams)
                     scaleTypography(newWidth)
                     true
                 }
                 MotionEvent.ACTION_UP -> {
-                    prefs.edit().putInt("pref_overlay_width_px", layoutParams.width).apply()
+                    prefs.edit()
+                        .putInt("pref_overlay_width_px", layoutParams.width)
+                        .putInt("pref_overlay_height_px", layoutParams.height)
+                        .apply()
                     true
                 }
                 else -> false
@@ -349,11 +367,20 @@ class FloatingStopwatchService : Service() {
 
         scaleGestureDetector = ScaleGestureDetector(this, object : ScaleGestureDetector.SimpleOnScaleGestureListener() {
             override fun onScale(detector: ScaleGestureDetector): Boolean {
-                val newWidth = (layoutParams.width * detector.scaleFactor).toInt().coerceIn(minWidth, maxWidth)
+                val scale = detector.scaleFactor
+                val newWidth = (layoutParams.width * scale).toInt().coerceIn(minWidth, maxWidth)
                 layoutParams.width = newWidth
+
+                val currentHeight = if (layoutParams.height > 0) layoutParams.height else binding.root.height
+                val newHeight = (currentHeight * scale).toInt().coerceIn(minHeight, maxHeight)
+                layoutParams.height = newHeight
+
                 windowManager.updateViewLayout(binding.root, layoutParams)
                 scaleTypography(newWidth)
-                prefs.edit().putInt("pref_overlay_width_px", newWidth).apply()
+                prefs.edit()
+                    .putInt("pref_overlay_width_px", newWidth)
+                    .putInt("pref_overlay_height_px", newHeight)
+                    .apply()
                 return true
             }
         })
@@ -484,7 +511,6 @@ class FloatingStopwatchService : Service() {
     private fun configureStopwatchMode() {
         binding.tvWindowTitle.text = "STOPWATCH"
         binding.tvWindowTitle.setTextColor(Color.parseColor("#859990"))
-        binding.viewTopAccentBar.setBackgroundColor(Color.parseColor("#00E676"))
         binding.btnPlayPause.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#00E676"))
 
         binding.tvTimerSubtext.visibility = View.GONE
@@ -506,7 +532,6 @@ class FloatingStopwatchService : Service() {
     private fun configureCountdownMode() {
         binding.tvWindowTitle.text = "COUNTDOWN"
         binding.tvWindowTitle.setTextColor(Color.parseColor("#FFAB00"))
-        binding.viewTopAccentBar.setBackgroundColor(Color.parseColor("#FFAB00"))
         binding.btnPlayPause.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#FFAB00"))
 
         binding.tvTimerSubtext.visibility = View.VISIBLE
@@ -532,7 +557,6 @@ class FloatingStopwatchService : Service() {
     private fun configureSimpleMode() {
         binding.tvWindowTitle.text = "SIMPLE"
         binding.tvWindowTitle.setTextColor(Color.parseColor("#FF5252"))
-        binding.viewTopAccentBar.setBackgroundColor(Color.parseColor("#FF5252"))
         binding.btnPlayPause.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#FF5252"))
 
         binding.tvTimerSubtext.visibility = View.GONE
@@ -555,7 +579,6 @@ class FloatingStopwatchService : Service() {
     private fun configureWallClockMode() {
         binding.tvWindowTitle.text = "LOCAL TIME"
         binding.tvWindowTitle.setTextColor(Color.parseColor("#FF5252"))
-        binding.viewTopAccentBar.setBackgroundColor(Color.parseColor("#FF5252"))
 
         binding.tvTimerSubtext.visibility = View.VISIBLE
         binding.tvActivePacing.visibility = View.GONE
