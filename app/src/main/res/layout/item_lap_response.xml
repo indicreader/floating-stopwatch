@@ -3,13 +3,15 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/item_container"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:gravity="center_vertical"
     android:paddingVertical="6dp"
     android:paddingHorizontal="10dp"
-    android:background="?attr/selectableItemBackground">
+    android:layout_marginBottom="2dp"
+    android:background="?attr/colorSurfaceContainer">
 
     <!-- Question Number Index -->
     <TextView
@@ -110,16 +112,16 @@
             android:contentDescription="Mark Correct"
             app:tint="?attr/colorSecondary" />
 
-        <!-- Incorrect Button -->
+        <!-- Wrong Button -->
         <ImageButton
-            android:id="@+id/btn_verify_incorrect"
+            android:id="@+id/btn_verify_wrong"
             android:layout_width="32dp"
             android:layout_height="32dp"
             android:padding="6dp"
             android:layout_marginStart="2dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_cross"
-            android:contentDescription="Mark Incorrect"
+            android:contentDescription="Mark Wrong"
             app:tint="?attr/colorOutline" />
 
         <!-- Skipped / Neutral Indicator -->

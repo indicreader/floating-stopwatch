@@ -3,6 +3,10 @@ package com.floatingapp.india.ui.lap
 
 import android.content.res.ColorStateList
 import android.graphics.Color
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.view.HapticFeedbackConstants
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,10 +19,11 @@ import com.floatingapp.india.databinding.ItemLapResponseBinding
 import com.floatingapp.india.model.OptionChoice
 import com.floatingapp.india.model.QuestionResponse
 import com.floatingapp.india.model.VerificationStatus
+import com.google.android.material.color.MaterialColors
 
 /**
  * LapAdapter displays recorded question responses with split timings, pacing spike tags,
- * and post-pause one-touch verification toggles.
+ * and post-pause one-touch verification toggles with visual state locking and highlighting.
  */
 class LapAdapter(
     private val onVerificationChanged: (questionNumber: Int, status: VerificationStatus) -> Unit
@@ -79,97 +84,153 @@ class LapAdapter(
                 binding.tvSpikeTag.visibility = View.GONE
             }
 
-            // Post-pause verification controls
+            // Post-pause verification controls & state highlighting
             if (isPaused) {
                 binding.layoutVerification.visibility = View.VISIBLE
+                applyRowStyling(binding, item)
 
-                if (item.selectedOption == OptionChoice.SKIP) {
-                    binding.tvVerifySkipped.visibility = View.VISIBLE
-                    binding.btnVerifyCorrect.visibility = View.GONE
-                    binding.btnVerifyIncorrect.visibility = View.GONE
-                } else {
-                    binding.tvVerifySkipped.visibility = View.GONE
-                    binding.btnVerifyCorrect.visibility = View.VISIBLE
-                    binding.btnVerifyIncorrect.visibility = View.VISIBLE
-
-                    applyVerificationStyling(binding, item.verificationStatus)
-
+                if (item.selectedOption != OptionChoice.SKIP) {
                     binding.btnVerifyCorrect.setOnClickListener {
                         val pos = bindingAdapterPosition
-                        if (pos != RecyclerView.NO_POSITION) {
-                            val currentItem = getItem(pos)
-                            val newStatus = if (currentItem.verificationStatus == VerificationStatus.CORRECT) {
-                                VerificationStatus.UNVERIFIED
-                            } else {
-                                VerificationStatus.CORRECT
-                            }
-                            currentItem.verificationStatus = newStatus
-                            applyVerificationStyling(binding, newStatus)
-                            onVerificationChanged(currentItem.questionNumber, newStatus)
+                        if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                        val currentItem = getItem(pos)
+
+                        // Debounce & Selection Locking:
+                        // If already in CORRECT state, ignore tap (no-op). Do not re-trigger animations, re-bindings, or metrics.
+                        if (currentItem.verificationStatus == VerificationStatus.CORRECT) {
+                            return@setOnClickListener
                         }
+
+                        // Provide subtle haptic feedback (short 10ms click) on successful state changes
+                        triggerHapticFeedback(it)
+
+                        // Transition state and update row background
+                        currentItem.verificationStatus = VerificationStatus.CORRECT
+                        applyRowStyling(binding, currentItem)
+                        onVerificationChanged(currentItem.questionNumber, VerificationStatus.CORRECT)
                     }
 
-                    binding.btnVerifyIncorrect.setOnClickListener {
+                    binding.btnVerifyWrong.setOnClickListener {
                         val pos = bindingAdapterPosition
-                        if (pos != RecyclerView.NO_POSITION) {
-                            val currentItem = getItem(pos)
-                            val newStatus = if (currentItem.verificationStatus == VerificationStatus.INCORRECT) {
-                                VerificationStatus.UNVERIFIED
-                            } else {
-                                VerificationStatus.INCORRECT
-                            }
-                            currentItem.verificationStatus = newStatus
-                            applyVerificationStyling(binding, newStatus)
-                            onVerificationChanged(currentItem.questionNumber, newStatus)
+                        if (pos == RecyclerView.NO_POSITION) return@setOnClickListener
+                        val currentItem = getItem(pos)
+
+                        // Debounce & Selection Locking:
+                        // If already in INCORRECT state, ignore tap (no-op).
+                        if (currentItem.verificationStatus == VerificationStatus.INCORRECT) {
+                            return@setOnClickListener
                         }
+
+                        // Provide subtle haptic feedback (short 10ms click) on successful state changes
+                        triggerHapticFeedback(it)
+
+                        // Transition state and update row background
+                        currentItem.verificationStatus = VerificationStatus.INCORRECT
+                        applyRowStyling(binding, currentItem)
+                        onVerificationChanged(currentItem.questionNumber, VerificationStatus.INCORRECT)
                     }
                 }
             } else {
                 binding.layoutVerification.visibility = View.GONE
+                val colorSurfaceContainer = MaterialColors.getColor(
+                    binding.root,
+                    com.google.android.material.R.attr.colorSurfaceContainer,
+                    Color.parseColor("#1E2022")
+                )
+                binding.itemContainer.setBackgroundColor(colorSurfaceContainer)
             }
         }
 
-        private fun applyVerificationStyling(
+        private fun applyRowStyling(
             binding: ItemLapResponseBinding,
-            status: VerificationStatus
+            item: QuestionResponse
         ) {
-            val colorGreenActive = ColorStateList.valueOf(Color.parseColor("#000000"))
-            val colorRedActive = ColorStateList.valueOf(Color.parseColor("#FFFFFF"))
+            val root = binding.root
+
+            // Resolve Material 3 dynamic semantic color tokens
+            val colorSurfaceContainer = MaterialColors.getColor(
+                root,
+                com.google.android.material.R.attr.colorSurfaceContainer,
+                Color.parseColor("#1E2022")
+            )
+            val colorPrimaryContainer = MaterialColors.getColor(
+                root,
+                com.google.android.material.R.attr.colorPrimaryContainer,
+                Color.parseColor("#1B3B2B")
+            )
+            val colorErrorContainer = MaterialColors.getColor(
+                root,
+                com.google.android.material.R.attr.colorErrorContainer,
+                Color.parseColor("#442020")
+            )
+
+            // Skip: default to a neutral gray surface tint with both buttons unset
+            if (item.selectedOption == OptionChoice.SKIP) {
+                binding.itemContainer.setBackgroundColor(colorSurfaceContainer)
+                binding.tvVerifySkipped.visibility = View.VISIBLE
+                binding.btnVerifyCorrect.visibility = View.GONE
+                binding.btnVerifyWrong.visibility = View.GONE
+                return
+            }
+
+            binding.tvVerifySkipped.visibility = View.GONE
+            binding.btnVerifyCorrect.visibility = View.VISIBLE
+            binding.btnVerifyWrong.visibility = View.VISIBLE
+
+            val colorGreenActive = ColorStateList.valueOf(Color.BLACK)
+            val colorRedActive = ColorStateList.valueOf(Color.WHITE)
             val colorDimmed = ColorStateList.valueOf(Color.parseColor("#7C8B84"))
 
-            when (status) {
+            when (item.verificationStatus) {
                 VerificationStatus.CORRECT -> {
-                    // Right button turns vibrant green with dark checkmark
+                    // Tapped ✔ (Correct): The question item container changes its background to a muted green (?attr/colorPrimaryContainer)
+                    binding.itemContainer.setBackgroundColor(colorPrimaryContainer)
+
                     binding.btnVerifyCorrect.setBackgroundResource(R.drawable.bg_circle_primary)
                     binding.btnVerifyCorrect.imageTintList = colorGreenActive
                     binding.btnVerifyCorrect.alpha = 1.0f
 
-                    // Wrong button dims
-                    binding.btnVerifyIncorrect.setBackgroundResource(R.drawable.bg_circle_dimmed)
-                    binding.btnVerifyIncorrect.imageTintList = colorDimmed
-                    binding.btnVerifyIncorrect.alpha = 0.35f
+                    binding.btnVerifyWrong.setBackgroundResource(R.drawable.bg_circle_dimmed)
+                    binding.btnVerifyWrong.imageTintList = colorDimmed
+                    binding.btnVerifyWrong.alpha = 0.35f
                 }
                 VerificationStatus.INCORRECT -> {
-                    // Right button dims
+                    // Tapped ✖ (Wrong): The question item container changes its background to a muted red (?attr/colorErrorContainer)
+                    binding.itemContainer.setBackgroundColor(colorErrorContainer)
+
                     binding.btnVerifyCorrect.setBackgroundResource(R.drawable.bg_circle_dimmed)
                     binding.btnVerifyCorrect.imageTintList = colorDimmed
                     binding.btnVerifyCorrect.alpha = 0.35f
 
-                    // Wrong button turns vibrant red with white cross
-                    binding.btnVerifyIncorrect.setBackgroundResource(R.drawable.bg_circle_danger)
-                    binding.btnVerifyIncorrect.imageTintList = colorRedActive
-                    binding.btnVerifyIncorrect.alpha = 1.0f
+                    binding.btnVerifyWrong.setBackgroundResource(R.drawable.bg_circle_danger)
+                    binding.btnVerifyWrong.imageTintList = colorRedActive
+                    binding.btnVerifyWrong.alpha = 1.0f
                 }
                 else -> {
-                    // Neither selected - both subtle/dimmed
+                    // Default / Unchecked: Standard neutral surface (?attr/colorSurfaceContainer)
+                    binding.itemContainer.setBackgroundColor(colorSurfaceContainer)
+
                     binding.btnVerifyCorrect.setBackgroundResource(R.drawable.bg_circle_dimmed)
                     binding.btnVerifyCorrect.imageTintList = colorDimmed
                     binding.btnVerifyCorrect.alpha = 0.7f
 
-                    binding.btnVerifyIncorrect.setBackgroundResource(R.drawable.bg_circle_dimmed)
-                    binding.btnVerifyIncorrect.imageTintList = colorDimmed
-                    binding.btnVerifyIncorrect.alpha = 0.7f
+                    binding.btnVerifyWrong.setBackgroundResource(R.drawable.bg_circle_dimmed)
+                    binding.btnVerifyWrong.imageTintList = colorDimmed
+                    binding.btnVerifyWrong.alpha = 0.7f
                 }
+            }
+        }
+
+        private fun triggerHapticFeedback(view: View) {
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    val vibrator = ContextCompat.getSystemService(view.context, Vibrator::class.java)
+                    vibrator?.vibrate(VibrationEffect.createOneShot(10L, VibrationEffect.DEFAULT_AMPLITUDE))
+                } else {
+                    view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
+                }
+            } catch (_: Exception) {
+                view.performHapticFeedback(HapticFeedbackConstants.KEYBOARD_TAP)
             }
         }
     }
