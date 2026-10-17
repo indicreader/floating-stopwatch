@@ -86,6 +86,141 @@
 
             </com.google.android.material.card.MaterialCardView>
 
+            <!-- 0. Configurable Drill Session Tag Card (<Tag> - <Number>) -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_drill_tag_selector"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="16dp"
+                app:cardCornerRadius="16dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="#24342C"
+                app:cardBackgroundColor="#17221D">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="14dp">
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <TextView
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:text="Session Drill Tag"
+                            android:textAppearance="?attr/textAppearanceTitleMedium"
+                            android:textStyle="bold"
+                            android:textColor="#E6ECE9" />
+
+                        <!-- Active Tag Live Preview Badge -->
+                        <TextView
+                            android:id="@+id/tv_active_tag_preview"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:background="@drawable/badge_question_number"
+                            android:text="Type - 1"
+                            android:fontFamily="monospace"
+                            android:textSize="12sp"
+                            android:textStyle="bold"
+                            android:textColor="#FFFFFF" />
+
+                    </LinearLayout>
+
+                    <TextView
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:layout_marginBottom="12dp"
+                        android:text="Pattern: &lt;Tag&gt; - &lt;Number&gt; for logs, overlay badge &amp; scoring"
+                        android:textSize="11sp"
+                        android:textColor="#859990" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:gravity="center_vertical">
+
+                        <!-- Tag Dropdown Spinner Container -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:layout_marginEnd="10dp"
+                            android:background="@drawable/bg_badge_skip"
+                            android:gravity="center_vertical"
+                            android:paddingHorizontal="8dp">
+
+                            <Spinner
+                                android:id="@+id/spinner_drill_tag"
+                                android:layout_width="match_parent"
+                                android:layout_height="wrap_content"
+                                android:spinnerMode="dropdown"
+                                android:popupBackground="#1A2420" />
+
+                        </LinearLayout>
+
+                        <!-- Number Stepper [ - ] [ 1 ] [ + ] -->
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="44dp"
+                            android:orientation="horizontal"
+                            android:gravity="center_vertical"
+                            android:background="@drawable/bg_badge_skip"
+                            android:paddingHorizontal="4dp">
+
+                            <TextView
+                                android:id="@+id/btn_tag_num_minus"
+                                android:layout_width="36dp"
+                                android:layout_height="36dp"
+                                android:gravity="center"
+                                android:text="—"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="#00E676"
+                                android:background="?attr/selectableItemBackgroundBorderless"
+                                android:clickable="true"
+                                android:focusable="true" />
+
+                            <TextView
+                                android:id="@+id/tv_tag_num_display"
+                                android:layout_width="36dp"
+                                android:layout_height="wrap_content"
+                                android:gravity="center"
+                                android:text="1"
+                                android:fontFamily="monospace"
+                                android:textSize="16sp"
+                                android:textStyle="bold"
+                                android:textColor="#E6ECE9" />
+
+                            <TextView
+                                android:id="@+id/btn_tag_num_plus"
+                                android:layout_width="36dp"
+                                android:layout_height="36dp"
+                                android:gravity="center"
+                                android:text="+"
+                                android:textSize="20sp"
+                                android:textStyle="bold"
+                                android:textColor="#00E676"
+                                android:background="?attr/selectableItemBackgroundBorderless"
+                                android:clickable="true"
+                                android:focusable="true" />
+
+                        </LinearLayout>
+
+                    </LinearLayout>
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
             <!-- 1. Stopwatch / Practice Timer Card (Primary Feature) -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/card_preset_stopwatch"

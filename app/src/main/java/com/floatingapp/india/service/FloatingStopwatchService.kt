@@ -36,6 +36,7 @@ import androidx.recyclerview.widget.LinearLayoutManager
 import com.floatingapp.india.MainActivity
 import com.floatingapp.india.R
 import com.floatingapp.india.databinding.LayoutFloatingStopwatchBinding
+import com.floatingapp.india.manager.DrillTagRepository
 import com.floatingapp.india.manager.PracticeSessionManager
 import com.floatingapp.india.model.OptionChoice
 import com.floatingapp.india.model.QuestionResponse
@@ -76,6 +77,7 @@ class FloatingStopwatchService : Service() {
 
     // Practice Stopwatch State
     private val sessionManager = PracticeSessionManager()
+    private lateinit var drillTagRepo: DrillTagRepository
     private lateinit var lapAdapter: LapAdapter
     private var isRunning: Boolean = false
     private var baseStartTime: Long = 0L
@@ -128,6 +130,7 @@ class FloatingStopwatchService : Service() {
     override fun onCreate() {
         super.onCreate()
         prefs = PreferenceManager.getDefaultSharedPreferences(this)
+        drillTagRepo = DrillTagRepository(this)
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
 
         loadPreferences()
@@ -438,6 +441,26 @@ class FloatingStopwatchService : Service() {
             cycleCountdownPreset()
         }
 
+        binding.btnFloatingDrillTag.setOnClickListener {
+            val nextNum = drillTagRepo.incrementNumber()
+            updateDrillTagBadge()
+            Toast.makeText(this, "${drillTagRepo.getActiveTag()} - $nextNum", Toast.LENGTH_SHORT).show()
+        }
+
+        binding.btnFloatingDrillTag.setOnLongClickListener {
+            val presets = drillTagRepo.getTagPresets()
+            if (presets.isNotEmpty()) {
+                val currentTag = drillTagRepo.getActiveTag()
+                val currentIndex = presets.indexOf(currentTag)
+                val nextIndex = if (currentIndex != -1) (currentIndex + 1) % presets.size else 0
+                val nextTag = presets[nextIndex]
+                drillTagRepo.setActiveTag(nextTag)
+                updateDrillTagBadge()
+                Toast.makeText(this, "Tag: $nextTag", Toast.LENGTH_SHORT).show()
+            }
+            true
+        }
+
         binding.btnFloatingSettings.setOnClickListener {
             val intent = Intent(this, SettingsActivity::class.java).apply {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
@@ -471,6 +494,8 @@ class FloatingStopwatchService : Service() {
         val fontSizeSp = prefs.getString("pref_font_size", "32")?.toFloatOrNull() ?: 32f
         binding.tvTimerDisplay.textSize = fontSizeSp
         binding.cardFloatingContainer.alpha = 1.0f
+
+        updateDrillTagBadge()
 
         val optionFormat = prefs.getString("pref_option_format", "letters") ?: "letters"
         val isNumeric = optionFormat == "numbers"
@@ -686,6 +711,12 @@ class FloatingStopwatchService : Service() {
         }
     }
 
+    private fun updateDrillTagBadge() {
+        val formatted = drillTagRepo.getFormattedSessionTag()
+        binding.btnFloatingDrillTag.text = formatted
+        binding.tvHeaderStatus.text = formatted
+    }
+
     private fun updateMetricsBanner() {
         val metrics = sessionManager.calculateMetrics()
 
@@ -695,7 +726,8 @@ class FloatingStopwatchService : Service() {
 
         binding.tvMetricBreakdown.text = String.format(
             Locale.US,
-            "%d Solved • %d Correct • %d Wrong • %d Skipped",
+            "[%s] • %d Solved • %d Correct • %d Wrong • %d Skipped",
+            drillTagRepo.getFormattedSessionTag(),
             metrics.totalAnswered,
             metrics.totalCorrect,
             metrics.totalIncorrect,

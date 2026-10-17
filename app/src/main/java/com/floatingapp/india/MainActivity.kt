@@ -13,13 +13,21 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import android.app.AlertDialog
+import android.view.ViewGroup
+import android.widget.AdapterView
+import android.widget.ArrayAdapter
+import android.widget.EditText
+import android.widget.TextView
 import com.floatingapp.india.databinding.ActivityMainBinding
+import com.floatingapp.india.manager.DrillTagRepository
 import com.floatingapp.india.service.FloatingStopwatchService
 import com.floatingapp.india.ui.settings.SettingsActivity
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
+    private lateinit var drillTagRepo: DrillTagRepository
     private var selectedMode: String = FloatingStopwatchService.MODE_STOPWATCH
 
     private val notificationPermissionLauncher = registerForActivityResult(
@@ -35,6 +43,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        drillTagRepo = DrillTagRepository(this)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
@@ -49,6 +58,9 @@ class MainActivity : AppCompatActivity() {
         binding.btnPermission.setOnClickListener {
             requestOverlayPermission()
         }
+
+        // Setup Configurable Drill Tag Selector (<Tag> - <Number>)
+        setupDrillTagSelector()
 
         // Setup Practice Timer & Countdown Mode Cards
         binding.cardPresetStopwatch.setOnClickListener {
@@ -74,6 +86,99 @@ class MainActivity : AppCompatActivity() {
         updateCardSelectionUI()
     }
 
+    private fun setupDrillTagSelector() {
+        binding.btnTagNumMinus.setOnClickListener {
+            drillTagRepo.decrementNumber()
+            updateDrillTagDisplay()
+        }
+
+        binding.btnTagNumPlus.setOnClickListener {
+            drillTagRepo.incrementNumber()
+            updateDrillTagDisplay()
+        }
+
+        refreshDrillTagUI()
+    }
+
+    private fun updateDrillTagDisplay() {
+        binding.tvTagNumDisplay.text = drillTagRepo.getActiveNumber().toString()
+        binding.tvActiveTagPreview.text = drillTagRepo.getFormattedSessionTag()
+    }
+
+    private fun refreshDrillTagUI() {
+        val presets = drillTagRepo.getTagPresets()
+        val items = presets.toMutableList().apply { add("+ Add Custom Tag...") }
+
+        val adapter = object : ArrayAdapter<String>(this, android.R.layout.simple_spinner_item, items) {
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = super.getView(position, convertView, parent) as TextView
+                view.setTextColor(android.graphics.Color.parseColor("#E6ECE9"))
+                view.textSize = 14f
+                view.setPadding(4, 0, 4, 0)
+                return view
+            }
+            override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View {
+                val view = super.getDropDownView(position, convertView, parent) as TextView
+                view.setTextColor(android.graphics.Color.parseColor("#E6ECE9"))
+                view.setBackgroundColor(android.graphics.Color.parseColor("#17221D"))
+                view.setPadding(24, 24, 24, 24)
+                return view
+            }
+        }
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        binding.spinnerDrillTag.adapter = adapter
+
+        val activeTag = drillTagRepo.getActiveTag()
+        val activeIndex = presets.indexOf(activeTag)
+        if (activeIndex != -1) {
+            binding.spinnerDrillTag.setSelection(activeIndex)
+        }
+
+        binding.spinnerDrillTag.onItemSelectedListener = object : AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                val selected = items[position]
+                if (selected == "+ Add Custom Tag...") {
+                    promptAddCustomTag()
+                } else {
+                    drillTagRepo.setActiveTag(selected)
+                    updateDrillTagDisplay()
+                }
+            }
+
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
+        }
+
+        updateDrillTagDisplay()
+    }
+
+    private fun promptAddCustomTag() {
+        val input = EditText(this).apply {
+            hint = "e.g. Test, Module, Set"
+            setTextColor(android.graphics.Color.WHITE)
+            setHintTextColor(android.graphics.Color.GRAY)
+            setPadding(48, 32, 48, 32)
+        }
+
+        AlertDialog.Builder(this)
+            .setTitle("Add Custom Drill Tag")
+            .setMessage("Enter a new prefix to identify practice drill sections:")
+            .setView(input)
+            .setPositiveButton("Save") { _, _ ->
+                val custom = input.text.toString().trim()
+                if (custom.isNotEmpty()) {
+                    drillTagRepo.addCustomTag(custom)
+                }
+                refreshDrillTagUI()
+            }
+            .setNegativeButton("Cancel") { _, _ ->
+                refreshDrillTagUI()
+            }
+            .setOnCancelListener {
+                refreshDrillTagUI()
+            }
+            .show()
+    }
+
     private fun selectMode(mode: String) {
         selectedMode = mode
         updateCardSelectionUI()
@@ -94,6 +199,7 @@ class MainActivity : AppCompatActivity() {
     override fun onResume() {
         super.onResume()
         updatePermissionStatus()
+        updateDrillTagDisplay()
     }
 
     private fun updatePermissionStatus() {

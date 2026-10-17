@@ -73,6 +73,25 @@
                         android:clickable="true"
                         android:focusable="true" />
 
+                    <!-- Configurable Session Drill Tag (<Tag> - <Number>) -->
+                    <TextView
+                        android:id="@+id/btn_floating_drill_tag"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="8dp"
+                        android:paddingHorizontal="7dp"
+                        android:paddingVertical="2dp"
+                        android:background="@drawable/badge_question_number"
+                        android:text="Type - 1"
+                        android:fontFamily="monospace"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF"
+                        android:clickable="true"
+                        android:focusable="true"
+                        android:contentDescription="Tap to cycle number, long press to cycle tag" />
+
+
                 </LinearLayout>
 
                 <LinearLayout
