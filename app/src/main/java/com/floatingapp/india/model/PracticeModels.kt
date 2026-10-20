@@ -39,6 +39,15 @@ enum class VerificationStatus {
 }
 
 /**
+ * Pacing category relative to benchmark threshold.
+ */
+enum class PacingCategory {
+    FAST,       // Under target (e.g. < 90% of target)
+    ON_PACE,    // Within ±10% of target
+    SLOW        // Over target (> 110% of target / time trap)
+}
+
+/**
  * Immutable entity representing a single question's recorded answer, timing, and verification status.
  */
 data class QuestionResponse(
@@ -46,7 +55,7 @@ data class QuestionResponse(
     val selectedOption: OptionChoice,            // A, B, C, D, or SKIP
     val splitDurationMillis: Long,               // Delta duration since last lap/start
     val cumulativeTimeMillis: Long,              // Total stopwatch elapsed time at moment of tap
-    val targetDurationSeconds: Int = 30,         // Target pacing budget in seconds
+    val targetDurationSeconds: Int = 45,         // Target pacing budget in seconds (default: 45s)
     var verificationStatus: VerificationStatus = if (selectedOption == OptionChoice.SKIP) VerificationStatus.SKIPPED else VerificationStatus.UNVERIFIED,
     var isFlagged: Boolean = false               // Mark-for-review flag
 ) {
@@ -55,6 +64,27 @@ data class QuestionResponse(
 
     val overtimeSeconds: Long
         get() = if (isOvertime) (splitDurationMillis - (targetDurationSeconds * 1000L)) / 1000 else 0L
+
+    val deltaSeconds: Long
+        get() = (splitDurationMillis / 1000) - targetDurationSeconds
+
+    val deltaFormatted: String
+        get() {
+            val diff = deltaSeconds
+            return if (diff > 0) "+${diff}s" else "${diff}s"
+        }
+
+    val pacingCategory: PacingCategory
+        get() {
+            val targetMillis = targetDurationSeconds * 1000L
+            val lowerBound = (targetMillis * 0.90).toLong()
+            val upperBound = (targetMillis * 1.10).toLong()
+            return when {
+                splitDurationMillis < lowerBound -> PacingCategory.FAST
+                splitDurationMillis <= upperBound -> PacingCategory.ON_PACE
+                else -> PacingCategory.SLOW
+            }
+        }
 
     val formattedSplit: String
         get() = formatDuration(splitDurationMillis)
@@ -79,7 +109,7 @@ data class QuestionResponse(
 }
 
 /**
- * Headline summary metrics calculated across the active session.
+ * Headline summary metrics & session diagnostics calculated across the active session.
  */
 data class SessionMetrics(
     val accuracyPercentage: Int = 0,
@@ -90,13 +120,24 @@ data class SessionMetrics(
     val totalIncorrect: Int = 0,
     val totalSkipped: Int = 0,
     val totalFlagged: Int = 0,
-    val topTimeSinks: List<QuestionResponse> = emptyList()
+    val topTimeSinks: List<QuestionResponse> = emptyList(),
+    val totalSessionDurationMillis: Long = 0L,
+    val fastestQuestion: QuestionResponse? = null,
+    val slowestQuestion: QuestionResponse? = null,
+    val pacingAccuracyScore: Int = 0,             // % of questions finished <= target benchmark
+    val averageTimePerQuestionMillis: Long = 0L
 ) {
     val formattedAvgCorrect: String
         get() = if (totalCorrect > 0) QuestionResponse.formatSecondsDisplay(averageCorrectMillis) else "—"
 
     val formattedAvgIncorrect: String
         get() = if (totalIncorrect > 0) QuestionResponse.formatSecondsDisplay(averageIncorrectMillis) else "—"
+
+    val formattedTotalDuration: String
+        get() = QuestionResponse.formatDuration(totalSessionDurationMillis)
+
+    val formattedAvgTimePerQuestion: String
+        get() = if (averageTimePerQuestionMillis > 0L) QuestionResponse.formatSecondsDisplay(averageTimePerQuestionMillis) else "—"
 
     fun calculateNetScore(markCorrect: Float, markNegative: Float): Float {
         return (totalCorrect * markCorrect) - (totalIncorrect * markNegative)

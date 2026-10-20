@@ -20,6 +20,7 @@ import com.floatingapp.india.model.OptionChoice
 import com.floatingapp.india.model.QuestionResponse
 import com.floatingapp.india.model.VerificationStatus
 import com.google.android.material.color.MaterialColors
+import java.util.Locale
 
 /**
  * LapAdapter displays recorded question responses with split timings, pacing spike tags,
@@ -62,28 +63,52 @@ class LapAdapter(
             val context = itemView.context
 
             // Question index formatting
-            binding.tvQuestionIndex.text = String.format("Q%02d", item.questionNumber)
+            binding.tvQuestionIndex.text = String.format(Locale.US, "Q%02d", item.questionNumber)
 
-            // Option / Skip badge
+            // Option badge (visible if MCQ choice was picked, hidden if pure Next Q pacer)
             if (item.selectedOption == OptionChoice.SKIP) {
+                binding.tvSelectedOption.visibility = View.VISIBLE
                 binding.tvSelectedOption.text = "SKP"
                 binding.tvSelectedOption.setBackgroundResource(R.drawable.bg_badge_skip)
                 binding.tvSelectedOption.setTextColor(Color.parseColor("#CFD8DC"))
             } else {
+                binding.tvSelectedOption.visibility = View.VISIBLE
                 binding.tvSelectedOption.text = item.selectedOption.getDisplayLabel(isNumericOptionFormat)
                 binding.tvSelectedOption.setBackgroundResource(R.drawable.bg_badge_option)
                 binding.tvSelectedOption.setTextColor(Color.WHITE)
             }
 
-            // Split duration & overtime spike tag
-            binding.tvSplitTime.text = "+${item.formattedSplit}"
+            // Split timing formatted as "Q[n] • [Split Time] • (+/- vs target)"
+            val splitSec = QuestionResponse.formatSecondsDisplay(item.splitDurationMillis)
+            binding.tvSplitTime.text = String.format(
+                Locale.US,
+                "Q%d • %s • (%s)",
+                item.questionNumber,
+                splitSec,
+                item.deltaFormatted
+            )
             binding.tvCumulativeTime.text = "Total: ${item.formattedCumulative}"
 
-            if (item.isOvertime) {
-                binding.tvSpikeTag.visibility = View.VISIBLE
-                binding.tvSpikeTag.text = String.format("+%ds over", item.overtimeSeconds)
-            } else {
-                binding.tvSpikeTag.visibility = View.GONE
+            // Color-Coded Pacing Badge ([Fast], [On Pace], [Slow])
+            when (item.pacingCategory) {
+                com.floatingapp.india.model.PacingCategory.FAST -> {
+                    binding.tvPacingBadge.text = "Fast"
+                    binding.tvPacingBadge.setBackgroundResource(R.drawable.bg_circle_primary)
+                    binding.tvPacingBadge.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#00E676"))
+                    binding.tvPacingBadge.setTextColor(Color.parseColor("#0C1D17"))
+                }
+                com.floatingapp.india.model.PacingCategory.ON_PACE -> {
+                    binding.tvPacingBadge.text = "On Pace"
+                    binding.tvPacingBadge.setBackgroundResource(R.drawable.bg_badge_skip)
+                    binding.tvPacingBadge.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#37474F"))
+                    binding.tvPacingBadge.setTextColor(Color.parseColor("#CFD8DC"))
+                }
+                com.floatingapp.india.model.PacingCategory.SLOW -> {
+                    binding.tvPacingBadge.text = "Slow"
+                    binding.tvPacingBadge.setBackgroundResource(R.drawable.bg_badge_overtime)
+                    binding.tvPacingBadge.backgroundTintList = ColorStateList.valueOf(Color.parseColor("#D32F2F"))
+                    binding.tvPacingBadge.setTextColor(Color.WHITE)
+                }
             }
 
             // Post-pause verification controls & state highlighting

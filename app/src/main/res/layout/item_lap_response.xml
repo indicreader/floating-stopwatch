@@ -18,29 +18,31 @@
         android:id="@+id/tv_question_index"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:minWidth="46dp"
+        android:minWidth="42dp"
         android:gravity="center"
         android:background="@drawable/badge_question_number"
-        tools:text="Q101"
+        tools:text="Q01"
         android:fontFamily="monospace"
-        android:textSize="12sp"
+        android:textSize="11sp"
         android:textColor="#FFFFFF"
         android:textStyle="bold" />
 
     <!-- Option / Skip Badge -->
     <TextView
         android:id="@+id/tv_selected_option"
-        android:layout_width="32dp"
-        android:layout_height="26dp"
-        android:layout_marginStart="2dp"
+        android:layout_width="26dp"
+        android:layout_height="22dp"
+        android:layout_marginStart="4dp"
         android:gravity="center"
         android:background="@drawable/bg_badge_option"
         tools:text="B"
-        android:textSize="13sp"
+        android:textSize="11sp"
         android:textStyle="bold"
-        android:textColor="#FFFFFF" />
+        android:textColor="#FFFFFF"
+        android:visibility="gone"
+        tools:visibility="visible" />
 
-    <!-- Timing Block: Split delta & Overtime Tag -->
+    <!-- Main Timing Block: Format "Q[n] • [Split Time] • (+/- vs target)" -->
     <LinearLayout
         android:layout_width="0dp"
         android:layout_height="wrap_content"
@@ -49,39 +51,15 @@
         android:orientation="vertical"
         android:gravity="center_vertical">
 
-        <LinearLayout
+        <TextView
+            android:id="@+id/tv_split_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:gravity="center_vertical">
-
-            <TextView
-                android:id="@+id/tv_split_time"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                tools:text="+00:34.2"
-                android:fontFamily="monospace"
-                android:textAppearance="?attr/textAppearanceBodySmall"
-                android:textColor="?attr/colorOnSurface"
-                android:textStyle="bold" />
-
-            <!-- Pacing Spike Badge (shown when split exceeds target time) -->
-            <TextView
-                android:id="@+id/tv_spike_tag"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginStart="4dp"
-                android:paddingHorizontal="4dp"
-                android:paddingVertical="1dp"
-                android:background="@drawable/bg_badge_overtime"
-                tools:text="+4s over"
-                android:textSize="10sp"
-                android:textStyle="bold"
-                android:textColor="?attr/colorOnErrorContainer"
-                android:visibility="gone"
-                tools:visibility="visible" />
-
-        </LinearLayout>
+            tools:text="Q1 • 34s • (-11s)"
+            android:fontFamily="monospace"
+            android:textSize="12sp"
+            android:textColor="#E6ECE9"
+            android:textStyle="bold" />
 
         <TextView
             android:id="@+id/tv_cumulative_time"
@@ -89,16 +67,37 @@
             android:layout_height="wrap_content"
             tools:text="Total: 01:14.2"
             android:fontFamily="monospace"
-            android:textSize="11sp"
-            android:textColor="?attr/colorOnSurfaceVariant" />
+            android:textSize="10sp"
+            android:textColor="#859990" />
 
     </LinearLayout>
+
+    <!-- Color-coded Pacing Badge ([Fast], [On Pace], [Slow]) -->
+    <TextView
+        android:id="@+id/tv_pacing_badge"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="6dp"
+        android:paddingVertical="2dp"
+        android:background="@drawable/bg_badge_option"
+        tools:text="Fast"
+        android:textSize="10sp"
+        android:textStyle="bold"
+        android:textColor="#FFFFFF" />
+
+    <!-- Spike tag for backward compatibility -->
+    <TextView
+        android:id="@+id/tv_spike_tag"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:visibility="gone" />
 
     <!-- Post-Pause Verification Actions -->
     <LinearLayout
         android:id="@+id/layout_verification"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_marginStart="4dp"
         android:orientation="horizontal"
         android:gravity="center_vertical"
         android:visibility="gone"
@@ -107,9 +106,9 @@
         <!-- Correct Button -->
         <ImageButton
             android:id="@+id/btn_verify_correct"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:padding="6dp"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:padding="5dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_check"
             android:contentDescription="Mark Correct"
@@ -118,9 +117,9 @@
         <!-- Wrong Button -->
         <ImageButton
             android:id="@+id/btn_verify_wrong"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:padding="6dp"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
+            android:padding="5dp"
             android:layout_marginStart="2dp"
             android:background="?attr/selectableItemBackgroundBorderless"
             android:src="@drawable/ic_cross"
@@ -130,11 +129,11 @@
         <!-- Skipped / Neutral Indicator -->
         <TextView
             android:id="@+id/tv_verify_skipped"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
+            android:layout_width="28dp"
+            android:layout_height="28dp"
             android:gravity="center"
             android:text="—"
-            android:textSize="14sp"
+            android:textSize="12sp"
             android:textColor="?attr/colorOnSurfaceVariant"
             android:visibility="gone" />
 

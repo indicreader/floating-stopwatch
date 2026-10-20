@@ -1,21 +1,25 @@
 <resources>
-    <!-- Target Question Time -->
+    <!-- Target Question Time (15s to 180s, default 45s) -->
     <string-array name="pref_target_question_time_entries">
-        <item>20 seconds</item>
-        <item>30 seconds (Default)</item>
-        <item>45 seconds</item>
+        <item>15 seconds</item>
+        <item>30 seconds</item>
+        <item>45 seconds (Default)</item>
         <item>60 seconds (1 min)</item>
         <item>90 seconds (1.5 min)</item>
         <item>120 seconds (2 min)</item>
+        <item>150 seconds (2.5 min)</item>
+        <item>180 seconds (3 min)</item>
     </string-array>
 
     <string-array name="pref_target_question_time_values">
-        <item>20</item>
+        <item>15</item>
         <item>30</item>
         <item>45</item>
         <item>60</item>
         <item>90</item>
         <item>120</item>
+        <item>150</item>
+        <item>180</item>
     </string-array>
 
     <!-- Option Label Format (Letters A, B, C, D vs Numbers 1, 2, 3, 4) -->

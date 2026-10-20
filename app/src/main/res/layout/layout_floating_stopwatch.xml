@@ -23,6 +23,111 @@
             android:layout_height="0dp"
             android:visibility="gone" />
 
+        <!-- 0. Compact Running Pill State (~44dp height) -->
+        <LinearLayout
+            android:id="@+id/layout_compact_pill"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="6dp"
+            android:paddingVertical="4dp"
+            android:visibility="gone"
+            tools:visibility="visible">
+
+            <!-- Dedicated Grip Drag Strip for Compact Pill -->
+            <ImageView
+                android:id="@+id/iv_pill_drag_grip"
+                android:layout_width="18dp"
+                android:layout_height="28dp"
+                android:padding="2dp"
+                android:src="@drawable/ic_drag_handle"
+                android:contentDescription="Drag overlay pill"
+                app:tint="#859990" />
+
+            <!-- Timing Block with Peripheral Metronome Border -->
+            <com.google.android.material.card.MaterialCardView
+                android:id="@+id/card_pill_pace_ring"
+                android:layout_width="wrap_content"
+                android:layout_height="34dp"
+                android:layout_marginStart="4dp"
+                app:cardCornerRadius="17dp"
+                app:cardElevation="0dp"
+                app:strokeWidth="2dp"
+                app:strokeColor="#00E676"
+                app:cardBackgroundColor="#2612161A">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="match_parent"
+                    android:orientation="horizontal"
+                    android:gravity="center_vertical"
+                    android:paddingHorizontal="8dp">
+
+                    <!-- Prominent Question Split Timer (00:24) -->
+                    <TextView
+                        android:id="@+id/tv_pill_split_display"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:fontFamily="monospace"
+                        android:text="00:00.0"
+                        android:textSize="13sp"
+                        android:textStyle="bold"
+                        android:textColor="#E6ECE9"
+                        android:includeFontPadding="false" />
+
+                    <!-- Total Test Time Micro-Text (Tot: 14:30) -->
+                    <TextView
+                        android:id="@+id/tv_pill_total_display"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="6dp"
+                        android:fontFamily="monospace"
+                        android:text="Tot: 00:00"
+                        android:textSize="9sp"
+                        android:textColor="#859990" />
+
+                </LinearLayout>
+
+            </com.google.android.material.card.MaterialCardView>
+
+            <!-- Prominent High-Contrast Next Q Button -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_pill_next_question"
+                android:layout_width="wrap_content"
+                android:layout_height="34dp"
+                android:layout_marginStart="6dp"
+                android:text="Next Q ▶"
+                android:textSize="11sp"
+                android:textStyle="bold"
+                android:backgroundTint="#00E676"
+                android:textColor="#0C1D17"
+                app:cornerRadius="17dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp"
+                android:paddingHorizontal="10dp" />
+
+            <!-- Compact Pause Button -->
+            <ImageButton
+                android:id="@+id/btn_pill_pause"
+                android:layout_width="30dp"
+                android:layout_height="30dp"
+                android:layout_marginStart="4dp"
+                android:scaleType="centerInside"
+                android:background="@drawable/bg_circle_secondary"
+                android:src="@drawable/ic_pause"
+                android:contentDescription="Pause Session"
+                app:tint="#E6ECE9" />
+
+        </LinearLayout>
+
+        <!-- Expanded Inspector Card Layout -->
+        <LinearLayout
+            android:id="@+id/layout_expanded_inspector"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical">
+
         <!-- 1. Pinned Drag Header & Window Controls -->
         <RelativeLayout
             android:id="@+id/layout_drag_header"
@@ -239,7 +344,7 @@
 
             </LinearLayout>
 
-            <!-- 5. Post-Pause Headline Accuracy & Timing Metrics Banner -->
+            <!-- 5. On-Screen Session Diagnostic Card -->
             <com.google.android.material.card.MaterialCardView
                 android:id="@+id/layout_accuracy_banner"
                 android:layout_width="match_parent"
@@ -249,6 +354,8 @@
                 tools:visibility="visible"
                 app:cardCornerRadius="12dp"
                 app:cardElevation="0dp"
+                app:strokeWidth="1dp"
+                app:strokeColor="#00E676"
                 app:cardBackgroundColor="#1D2924">
 
                 <LinearLayout
@@ -257,13 +364,24 @@
                     android:orientation="vertical"
                     android:padding="8dp">
 
+                    <TextView
+                        android:id="@+id/tv_session_diag_title"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="SESSION DIAGNOSTICS 🎯"
+                        android:letterSpacing="0.08"
+                        android:textSize="10sp"
+                        android:textStyle="bold"
+                        android:textColor="#00E676"
+                        android:layout_marginBottom="4dp" />
+
                     <LinearLayout
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
                         android:weightSum="3">
 
-                        <!-- Metric 1: Accuracy % -->
+                        <!-- Metric 1: Pacing Accuracy Score % -->
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -277,20 +395,20 @@
                                 android:layout_height="wrap_content"
                                 tools:text="85%"
                                 android:fontFamily="monospace"
-                                android:textSize="16sp"
+                                android:textSize="15sp"
                                 android:textStyle="bold"
                                 android:textColor="#00E676" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Accuracy"
+                                android:text="Pace Score"
                                 android:textSize="10sp"
                                 android:textColor="#859990" />
 
                         </LinearLayout>
 
-                        <!-- Metric 2: Avg Correct Time -->
+                        <!-- Metric 2: Avg Time per Question -->
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -302,22 +420,22 @@
                                 android:id="@+id/tv_metric_avg_correct"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                tools:text="18.2s"
+                                tools:text="32.4s"
                                 android:fontFamily="monospace"
-                                android:textSize="16sp"
+                                android:textSize="15sp"
                                 android:textStyle="bold"
                                 android:textColor="#81C784" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Avg Correct"
+                                android:text="Avg Time/Q"
                                 android:textSize="10sp"
                                 android:textColor="#859990" />
 
                         </LinearLayout>
 
-                        <!-- Metric 3: Avg Incorrect Time -->
+                        <!-- Metric 3: Total Duration -->
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -329,16 +447,16 @@
                                 android:id="@+id/tv_metric_avg_incorrect"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                tools:text="36.5s"
+                                tools:text="14:30"
                                 android:fontFamily="monospace"
-                                android:textSize="16sp"
+                                android:textSize="15sp"
                                 android:textStyle="bold"
-                                android:textColor="#FF5252" />
+                                android:textColor="#FFB74D" />
 
                             <TextView
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
-                                android:text="Avg Wrong"
+                                android:text="Total Time"
                                 android:textSize="10sp"
                                 android:textColor="#859990" />
 
@@ -352,13 +470,100 @@
                         android:layout_height="wrap_content"
                         android:layout_marginTop="4dp"
                         android:gravity="center"
-                        tools:text="12 Solved • 10 Correct • 2 Wrong • 1 Skipped"
+                        tools:text="12 Attempted • 10 On Target • 2 Time-Traps"
                         android:textSize="10sp"
                         android:textColor="#A2B3AC" />
+
+                    <!-- Outlier Highlights -->
+                    <LinearLayout
+                        android:id="@+id/layout_outliers"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="6dp"
+                        android:padding="4dp"
+                        android:background="@drawable/bg_badge_skip"
+                        android:weightSum="2">
+
+                        <TextView
+                            android:id="@+id/tv_outlier_fastest"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:fontFamily="monospace"
+                            android:textSize="10sp"
+                            android:textColor="#00E676"
+                            tools:text="⚡ Fast: Q3 (22s)" />
+
+                        <TextView
+                            android:id="@+id/tv_outlier_slowest"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:gravity="center"
+                            android:fontFamily="monospace"
+                            android:textSize="10sp"
+                            android:textColor="#FF5252"
+                            tools:text="⏳ Slow: Q7 (2m 14s)" />
+
+                    </LinearLayout>
+
+                    <!-- Diagnostic Action Buttons -->
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="horizontal"
+                        android:layout_marginTop="6dp"
+                        android:gravity="end">
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_diag_dismiss"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="32dp"
+                            android:text="Dismiss"
+                            android:textSize="11sp"
+                            android:textColor="#859990"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:paddingHorizontal="8dp" />
+
+                        <com.google.android.material.button.MaterialButton
+                            android:id="@+id/btn_diag_start_new"
+                            android:layout_width="wrap_content"
+                            android:layout_height="32dp"
+                            android:layout_marginStart="6dp"
+                            android:text="New Session"
+                            android:textSize="11sp"
+                            android:textStyle="bold"
+                            android:backgroundTint="#00E676"
+                            android:textColor="#0C1D17"
+                            app:cornerRadius="6dp"
+                            android:insetTop="0dp"
+                            android:insetBottom="0dp"
+                            android:paddingHorizontal="10dp" />
+
+                    </LinearLayout>
 
                 </LinearLayout>
 
             </com.google.android.material.card.MaterialCardView>
+
+            <!-- Dedicated Next Q Button in Inspector Card -->
+            <com.google.android.material.button.MaterialButton
+                android:id="@+id/btn_inspector_next_question"
+                android:layout_width="match_parent"
+                android:layout_height="38dp"
+                android:layout_marginBottom="6dp"
+                android:text="Next Question ▶"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:backgroundTint="#00E676"
+                android:textColor="#0C1D17"
+                app:cornerRadius="8dp"
+                android:insetTop="0dp"
+                android:insetBottom="0dp" />
 
             <!-- 5b. Top Time-Sink Outliers ("Top Bottlenecks") -->
             <com.google.android.material.card.MaterialCardView
@@ -592,8 +797,7 @@
                     android:id="@+id/rv_laps"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:nestedScrollingEnabled="false"
-                    android:maxHeight="200dp"
+                    android:nestedScrollingEnabled="true"
                     tools:listitem="@layout/item_lap_response"
                     tools:itemCount="3" />
 
@@ -631,6 +835,8 @@
                 app:tint="#859990" />
 
         </RelativeLayout>
+
+        </LinearLayout>
 
     </LinearLayout>
 
