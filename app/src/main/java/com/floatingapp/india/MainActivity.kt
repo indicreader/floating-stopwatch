@@ -19,6 +19,11 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.TextView
+import android.content.res.Configuration
+import android.widget.LinearLayout
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
+import androidx.core.view.updatePadding
 import com.floatingapp.india.databinding.ActivityMainBinding
 import com.floatingapp.india.manager.DrillTagRepository
 import com.floatingapp.india.service.FloatingStopwatchService
@@ -83,7 +88,91 @@ class MainActivity : AppCompatActivity() {
             checkPermissionsAndLaunch()
         }
 
+        setupWindowInsets()
         updateCardSelectionUI()
+        applyAdaptiveLayout()
+    }
+
+    private fun setupWindowInsets() {
+        ViewCompat.setOnApplyWindowInsetsListener(binding.appBarLayout) { view, windowInsets ->
+            val insets = windowInsets.getInsets(
+                WindowInsetsCompat.Type.statusBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            view.updatePadding(
+                top = insets.top,
+                left = insets.left,
+                right = insets.right
+            )
+            windowInsets
+        }
+
+        ViewCompat.setOnApplyWindowInsetsListener(binding.nestedScrollView) { view, windowInsets ->
+            val insets = windowInsets.getInsets(
+                WindowInsetsCompat.Type.navigationBars()
+            )
+            view.updatePadding(bottom = insets.bottom)
+            windowInsets
+        }
+    }
+
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
+        applyAdaptiveLayout()
+    }
+
+    private fun applyAdaptiveLayout() {
+        val displayMetrics = resources.displayMetrics
+        val widthDp = displayMetrics.widthPixels / displayMetrics.density
+        val isWide = widthDp >= 600 || resources.configuration.orientation == Configuration.ORIENTATION_LANDSCAPE
+
+        // Constrain max width for ultra-wide displays/tablets to prevent visual distortion
+        val maxContainerWidthPx = (760 * displayMetrics.density).toInt()
+        val actualWidthPx = displayMetrics.widthPixels
+        if (actualWidthPx > maxContainerWidthPx) {
+            val horizontalPadding = (actualWidthPx - maxContainerWidthPx) / 2
+            binding.nestedScrollView.setPadding(horizontalPadding, binding.nestedScrollView.paddingTop, horizontalPadding, binding.nestedScrollView.paddingBottom)
+        } else {
+            val defaultPadding = (16 * displayMetrics.density).toInt()
+            binding.nestedScrollView.setPadding(defaultPadding, binding.nestedScrollView.paddingTop, defaultPadding, binding.nestedScrollView.paddingBottom)
+        }
+
+        // Adaptive arrangement for Stopwatch and Countdown cards: side-by-side on wide/landscape, stacked on compact
+        val margin16 = (16 * displayMetrics.density).toInt()
+        val margin8 = (8 * displayMetrics.density).toInt()
+
+        if (isWide) {
+            binding.layoutPresetsGroup.orientation = LinearLayout.HORIZONTAL
+            (binding.cardPresetStopwatch.layoutParams as? LinearLayout.LayoutParams)?.let { lp ->
+                lp.width = 0
+                lp.weight = 1f
+                lp.marginEnd = margin8
+                lp.bottomMargin = margin16
+                binding.cardPresetStopwatch.layoutParams = lp
+            }
+            (binding.cardPresetCountdown.layoutParams as? LinearLayout.LayoutParams)?.let { lp ->
+                lp.width = 0
+                lp.weight = 1f
+                lp.marginStart = margin8
+                lp.bottomMargin = margin16
+                binding.cardPresetCountdown.layoutParams = lp
+            }
+        } else {
+            binding.layoutPresetsGroup.orientation = LinearLayout.VERTICAL
+            (binding.cardPresetStopwatch.layoutParams as? LinearLayout.LayoutParams)?.let { lp ->
+                lp.width = LinearLayout.LayoutParams.MATCH_PARENT
+                lp.weight = 0f
+                lp.marginEnd = 0
+                lp.bottomMargin = margin16
+                binding.cardPresetStopwatch.layoutParams = lp
+            }
+            (binding.cardPresetCountdown.layoutParams as? LinearLayout.LayoutParams)?.let { lp ->
+                lp.width = LinearLayout.LayoutParams.MATCH_PARENT
+                lp.weight = 0f
+                lp.marginStart = 0
+                lp.bottomMargin = margin16
+                binding.cardPresetCountdown.layoutParams = lp
+            }
+        }
     }
 
     private fun setupDrillTagSelector() {

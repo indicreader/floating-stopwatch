@@ -23,21 +23,14 @@
             android:layout_height="0dp"
             android:visibility="gone" />
 
-        <LinearLayout
-            android:id="@+id/layout_content_body"
+        <!-- 1. Pinned Drag Header & Window Controls -->
+        <RelativeLayout
+            android:id="@+id/layout_drag_header"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:paddingHorizontal="12dp"
-            android:paddingTop="8dp"
-            android:paddingBottom="4dp">
-
-            <!-- 1. Drag Header & Window Controls -->
-            <RelativeLayout
-                android:id="@+id/layout_drag_header"
-                android:layout_width="match_parent"
-                android:layout_height="32dp"
-                android:gravity="center_vertical">
+            android:layout_height="32dp"
+            android:layout_marginHorizontal="12dp"
+            android:layout_marginTop="6dp"
+            android:gravity="center_vertical">
 
                 <LinearLayout
                     android:layout_width="wrap_content"
@@ -138,7 +131,24 @@
 
             </RelativeLayout>
 
-            <!-- 2. Numerical Display matching original app style -->
+        <!-- 2. Scrollable Body Content with Viewport Guardrail -->
+        <androidx.core.widget.NestedScrollView
+            android:id="@+id/scroll_content_container"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:fillViewport="true"
+            android:overScrollMode="ifContentScrolls"
+            android:scrollbars="none">
+
+            <LinearLayout
+                android:id="@+id/layout_content_body"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingHorizontal="12dp"
+                android:paddingBottom="4dp">
+
+                <!-- 2. Numerical Display matching original app style -->
             <TextView
                 android:id="@+id/tv_timer_display"
                 android:layout_width="match_parent"
@@ -599,6 +609,8 @@
             </LinearLayout>
 
         </LinearLayout>
+
+        </androidx.core.widget.NestedScrollView>
 
         <!-- Bottom Resize Grip Bar -->
         <RelativeLayout

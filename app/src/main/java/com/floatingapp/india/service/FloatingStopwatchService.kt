@@ -224,10 +224,11 @@ class FloatingStopwatchService : Service() {
         val density = resources.displayMetrics.density
         val defaultWidth = (340 * density).toInt()
         val savedWidth = prefs.getInt("pref_overlay_width_px", defaultWidth)
+        val savedHeight = prefs.getInt("pref_overlay_height_px", WindowManager.LayoutParams.WRAP_CONTENT)
 
         layoutParams = WindowManager.LayoutParams(
             savedWidth,
-            WindowManager.LayoutParams.WRAP_CONTENT,
+            savedHeight,
             layoutType,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or screenOnFlag or lockScreenFlag,
             PixelFormat.TRANSLUCENT
@@ -244,7 +245,12 @@ class FloatingStopwatchService : Service() {
         setupControlButtons()
         setupInlinePrompt()
         applyPreferences()
-        scaleTypography(savedWidth)
+        if (savedHeight > 0) {
+            updateScrollContainerForFixedLayout()
+        } else {
+            updateScrollContainerForWrapContent()
+        }
+        scaleProportionally(savedWidth, savedHeight)
 
         try {
             windowManager.addView(binding.root, layoutParams)
@@ -301,22 +307,19 @@ class FloatingStopwatchService : Service() {
             }
         }
 
-        // Attach touch listener across ALL surfaces so the user can drag from ANYWHERE
+        // Attach touch listener across drag surfaces so the user can drag smoothly
         binding.cardFloatingContainer.setOnTouchListener(touchListener)
-        binding.layoutContentBody.setOnTouchListener(touchListener)
         binding.layoutDragHeader.setOnTouchListener(touchListener)
         binding.tvWindowTitle.setOnTouchListener(touchListener)
         binding.ivDragHandle.setOnTouchListener(touchListener)
         binding.tvTimerDisplay.setOnTouchListener(touchListener)
         binding.tvTimerSubtext.setOnTouchListener(touchListener)
         binding.tvActivePacing.setOnTouchListener(touchListener)
-        binding.layoutAccuracyBanner.setOnTouchListener(touchListener)
-        binding.layoutOptionButtons.root.setOnTouchListener(touchListener)
     }
 
     /**
-     * Dedicated drag-to-resize handle at the bottom-right corner,
-     * plus ScaleGestureDetector for pinch-to-resize.
+     * Dedicated drag-to-resize handle at the bottom-right corner supporting
+     * bidirectional (horizontal and vertical) resizing, plus ScaleGestureDetector.
      */
     @SuppressLint("ClickableViewAccessibility")
     private fun setupResizeListener() {
@@ -330,31 +333,53 @@ class FloatingStopwatchService : Service() {
         val screenWidth = displayMetrics.widthPixels
         val screenHeight = displayMetrics.heightPixels
 
-        val minWidth = (220 * density).toInt()
-        val maxWidth = (screenWidth * 0.90f).toInt()
+        val minWidth = (200 * density).toInt()
+        val maxWidth = (screenWidth * 0.95f).toInt()
+        val minHeight = (120 * density).toInt()
+        val maxHeight = (screenHeight * 0.90f).toInt()
+
+        var lastClickTime = 0L
 
         binding.ivResizeHandle.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     startWidth = layoutParams.width
+                    startHeight = if (layoutParams.height > 0) layoutParams.height else binding.root.height
                     startTouchX = event.rawX
+                    startTouchY = event.rawY
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
                     val deltaX = (event.rawX - startTouchX).toInt()
+                    val deltaY = (event.rawY - startTouchY).toInt()
                     val newWidth = (startWidth + deltaX).coerceIn(minWidth, maxWidth)
+                    val newHeight = (startHeight + deltaY).coerceIn(minHeight, maxHeight)
 
                     layoutParams.width = newWidth
-                    layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT
+                    layoutParams.height = newHeight
+                    updateScrollContainerForFixedLayout()
                     safeUpdateViewLayout()
-                    scaleTypography(newWidth)
+                    scaleProportionally(newWidth, newHeight)
                     true
                 }
                 MotionEvent.ACTION_UP -> {
-                    prefs.edit()
-                        .putInt("pref_overlay_width_px", layoutParams.width)
-                        .remove("pref_overlay_height_px")
-                        .apply()
+                    val now = System.currentTimeMillis()
+                    if (now - lastClickTime < 300) {
+                        layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT
+                        updateScrollContainerForWrapContent()
+                        safeUpdateViewLayout()
+                        scaleProportionally(layoutParams.width)
+                        prefs.edit()
+                            .putInt("pref_overlay_width_px", layoutParams.width)
+                            .remove("pref_overlay_height_px")
+                            .apply()
+                    } else {
+                        prefs.edit()
+                            .putInt("pref_overlay_width_px", layoutParams.width)
+                            .putInt("pref_overlay_height_px", layoutParams.height)
+                            .apply()
+                    }
+                    lastClickTime = now
                     true
                 }
                 else -> false
@@ -365,26 +390,88 @@ class FloatingStopwatchService : Service() {
             override fun onScale(detector: ScaleGestureDetector): Boolean {
                 val scale = detector.scaleFactor
                 val newWidth = (layoutParams.width * scale).toInt().coerceIn(minWidth, maxWidth)
-                layoutParams.width = newWidth
-                layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT
+                val currentH = if (layoutParams.height > 0) layoutParams.height else binding.root.height
+                val newHeight = (currentH * scale).toInt().coerceIn(minHeight, maxHeight)
 
+                layoutParams.width = newWidth
+                layoutParams.height = newHeight
+                updateScrollContainerForFixedLayout()
                 safeUpdateViewLayout()
-                scaleTypography(newWidth)
+                scaleProportionally(newWidth, newHeight)
                 prefs.edit()
                     .putInt("pref_overlay_width_px", newWidth)
-                    .remove("pref_overlay_height_px")
+                    .putInt("pref_overlay_height_px", newHeight)
                     .apply()
                 return true
             }
         })
     }
 
-    private fun scaleTypography(currentWidthPx: Int) {
+    private fun updateScrollContainerForFixedLayout() {
+        (binding.scrollContentContainer.layoutParams as? LinearLayout.LayoutParams)?.let { lp ->
+            if (lp.height != 0 || lp.weight != 1f) {
+                lp.height = 0
+                lp.weight = 1f
+                binding.scrollContentContainer.layoutParams = lp
+            }
+        }
+    }
+
+    private fun updateScrollContainerForWrapContent() {
+        (binding.scrollContentContainer.layoutParams as? LinearLayout.LayoutParams)?.let { lp ->
+            if (lp.height != LinearLayout.LayoutParams.WRAP_CONTENT || lp.weight != 0f) {
+                lp.height = LinearLayout.LayoutParams.WRAP_CONTENT
+                lp.weight = 0f
+                binding.scrollContentContainer.layoutParams = lp
+            }
+        }
+    }
+
+    private fun scaleProportionally(currentWidthPx: Int, currentHeightPx: Int = -1) {
         val density = resources.displayMetrics.density
         val baseWidthPx = 340 * density
-        val scaleRatio = (currentWidthPx / baseWidthPx).coerceIn(0.7f, 1.6f)
+        val widthRatio = currentWidthPx / baseWidthPx
+        val scaleRatio = if (currentHeightPx > 0) {
+            val baseHeightPx = 280 * density
+            val heightRatio = currentHeightPx / baseHeightPx
+            minOf(widthRatio, heightRatio).coerceIn(0.7f, 1.5f)
+        } else {
+            widthRatio.coerceIn(0.7f, 1.5f)
+        }
+
         val baseFontSize = prefs.getString("pref_font_size", "32")?.toFloatOrNull() ?: 32f
         binding.tvTimerDisplay.textSize = baseFontSize * scaleRatio
+
+        val btnSize = (44 * density * scaleRatio).toInt().coerceIn((32 * density).toInt(), (56 * density).toInt())
+        val controls = listOf(binding.btnPlayPause, binding.btnReset, binding.btnToggleLaps, binding.btnCountdownPreset, binding.btnWallClockToggle)
+        for (btn in controls) {
+            val lp = btn.layoutParams
+            if (lp != null && (lp.width != btnSize || lp.height != btnSize)) {
+                lp.width = btnSize
+                lp.height = btnSize
+                btn.layoutParams = lp
+            }
+        }
+
+        val optHeight = (44 * density * scaleRatio).toInt().coerceIn((30 * density).toInt(), (52 * density).toInt())
+        val optTextSize = (15f * scaleRatio).coerceIn(11f, 18f)
+        val optButtons = listOf(
+            binding.layoutOptionButtons.btnOptionA,
+            binding.layoutOptionButtons.btnOptionB,
+            binding.layoutOptionButtons.btnOptionC,
+            binding.layoutOptionButtons.btnOptionD,
+            binding.layoutOptionButtons.btnOptionE,
+            binding.layoutOptionButtons.btnOptionF,
+            binding.layoutOptionButtons.btnOptionSkip
+        )
+        for (btn in optButtons) {
+            val lp = btn.layoutParams
+            if (lp != null && lp.height != optHeight) {
+                lp.height = optHeight
+                btn.layoutParams = lp
+            }
+            btn.textSize = optTextSize
+        }
     }
 
     private fun setupLapRecyclerView() {

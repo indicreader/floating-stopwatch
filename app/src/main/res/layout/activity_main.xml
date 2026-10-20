@@ -9,9 +9,11 @@
 
     <!-- Top App Bar -->
     <com.google.android.material.appbar.AppBarLayout
+        android:id="@+id/app_bar_layout"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="#101714"
+        android:fitsSystemWindows="true"
         app:elevation="0dp">
 
         <com.google.android.material.appbar.MaterialToolbar
@@ -37,10 +39,12 @@
     </com.google.android.material.appbar.AppBarLayout>
 
     <androidx.core.widget.NestedScrollView
+        android:id="@+id/nested_scroll_view"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:paddingHorizontal="16dp"
         android:paddingVertical="8dp"
+        android:fillViewport="true"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
         <LinearLayout
@@ -221,9 +225,16 @@
 
             </com.google.android.material.card.MaterialCardView>
 
-            <!-- 1. Stopwatch / Practice Timer Card (Primary Feature) -->
-            <com.google.android.material.card.MaterialCardView
-                android:id="@+id/card_preset_stopwatch"
+            <!-- Adaptive Practice Modes Container (Fluid Grid / Side-by-Side on Wide Screens) -->
+            <LinearLayout
+                android:id="@+id/layout_presets_group"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <!-- 1. Stopwatch / Practice Timer Card (Primary Feature) -->
+                <com.google.android.material.card.MaterialCardView
+                    android:id="@+id/card_preset_stopwatch"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="16dp"
@@ -324,6 +335,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_alignParentStart="true"
+                            android:layout_toStartOf="@+id/btn_launch_overlay"
+                            android:layout_marginEnd="8dp"
                             android:layout_centerVertical="true"
                             android:orientation="horizontal"
                             android:gravity="center_vertical">
@@ -466,6 +479,8 @@
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
                             android:layout_alignParentStart="true"
+                            android:layout_toStartOf="@+id/btn_launch_countdown"
+                            android:layout_marginEnd="8dp"
                             android:layout_centerVertical="true"
                             android:orientation="horizontal"
                             android:gravity="center_vertical">
@@ -506,6 +521,8 @@
                 </LinearLayout>
 
             </com.google.android.material.card.MaterialCardView>
+
+            </LinearLayout>
 
             <!-- 3. Simple Preset Card (Deprecated/Hidden) -->
             <com.google.android.material.card.MaterialCardView
