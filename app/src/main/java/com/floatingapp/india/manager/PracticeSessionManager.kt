@@ -14,7 +14,7 @@ import com.floatingapp.india.model.VerificationStatus
 class PracticeSessionManager {
 
     var startingQuestionOffset: Int = 1
-    var targetDurationSeconds: Int = 45
+    var targetDurationSeconds: Int = 30
 
     private val _responses = mutableListOf<QuestionResponse>()
     val responses: List<QuestionResponse> get() = _responses
@@ -113,7 +113,7 @@ class PracticeSessionManager {
     }
 
     /**
-     * Dynamically calculates headline accuracy, average times, and session diagnostics.
+     * Dynamically calculates headline accuracy, average times, and question counts.
      */
     fun calculateMetrics(): SessionMetrics {
         var correctCount = 0
@@ -122,16 +122,10 @@ class PracticeSessionManager {
         var flaggedCount = 0
         var correctDurationSum = 0L
         var incorrectDurationSum = 0L
-        var onTargetCount = 0
-        var totalDuration = 0L
 
         for (item in _responses) {
-            totalDuration += item.splitDurationMillis
             if (item.isFlagged) {
                 flaggedCount++
-            }
-            if (!item.isOvertime) {
-                onTargetCount++
             }
             when (item.verificationStatus) {
                 VerificationStatus.CORRECT -> {
@@ -159,10 +153,6 @@ class PracticeSessionManager {
         val avgIncorrect = if (incorrectCount > 0) incorrectDurationSum / incorrectCount else 0L
 
         val topSinks = _responses.sortedByDescending { it.splitDurationMillis }.take(3)
-        val fastest = _responses.filter { it.selectedOption != OptionChoice.SKIP }.minByOrNull { it.splitDurationMillis }
-        val slowest = _responses.maxByOrNull { it.splitDurationMillis }
-        val pacingScore = if (_responses.isNotEmpty()) (onTargetCount * 100) / _responses.size else 0
-        val avgTimePerQ = if (_responses.isNotEmpty()) totalDuration / _responses.size else 0L
 
         return SessionMetrics(
             accuracyPercentage = accuracy,
@@ -173,12 +163,7 @@ class PracticeSessionManager {
             totalIncorrect = incorrectCount,
             totalSkipped = skippedCount,
             totalFlagged = flaggedCount,
-            topTimeSinks = topSinks,
-            totalSessionDurationMillis = totalDuration,
-            fastestQuestion = fastest,
-            slowestQuestion = slowest,
-            pacingAccuracyScore = pacingScore,
-            averageTimePerQuestionMillis = avgTimePerQ
+            topTimeSinks = topSinks
         )
     }
 

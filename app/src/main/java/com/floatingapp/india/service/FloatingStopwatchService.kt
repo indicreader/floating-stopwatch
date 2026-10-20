@@ -224,11 +224,10 @@ class FloatingStopwatchService : Service() {
         val density = resources.displayMetrics.density
         val defaultWidth = (340 * density).toInt()
         val savedWidth = prefs.getInt("pref_overlay_width_px", defaultWidth)
-        val savedHeight = WindowManager.LayoutParams.WRAP_CONTENT
 
         layoutParams = WindowManager.LayoutParams(
             savedWidth,
-            savedHeight,
+            WindowManager.LayoutParams.WRAP_CONTENT,
             layoutType,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or screenOnFlag or lockScreenFlag,
             PixelFormat.TRANSLUCENT
@@ -245,12 +244,7 @@ class FloatingStopwatchService : Service() {
         setupControlButtons()
         setupInlinePrompt()
         applyPreferences()
-        if (savedHeight > 0) {
-            updateScrollContainerForFixedLayout()
-        } else {
-            updateScrollContainerForWrapContent()
-        }
-        scaleProportionally(savedWidth, savedHeight)
+        scaleTypography(savedWidth)
 
         try {
             windowManager.addView(binding.root, layoutParams)
@@ -273,15 +267,6 @@ class FloatingStopwatchService : Service() {
             val isLocked = prefs.getBoolean("pref_lock_position", false)
             if (isLocked) return@OnTouchListener false
 
-            // Ensure touch events on the log list pass through to the scroll container without triggering window drag
-            if (binding.layoutLapsDrawer.visibility == View.VISIBLE) {
-                val lapsRect = android.graphics.Rect()
-                binding.layoutLapsDrawer.getGlobalVisibleRect(lapsRect)
-                if (lapsRect.contains(event.rawX.toInt(), event.rawY.toInt())) {
-                    return@OnTouchListener false
-                }
-            }
-
             // Two-finger pinch to resize
             if (event.pointerCount > 1) {
                 scaleGestureDetector.onTouchEvent(event)
@@ -303,21 +288,11 @@ class FloatingStopwatchService : Service() {
                     true
                 }
                 MotionEvent.ACTION_UP -> {
-                    val screenWidth = resources.displayMetrics.widthPixels
-                    val density = resources.displayMetrics.density
-                    val dockThreshold = (20 * density).toInt()
-                    val windowW = if (binding.layoutCompactPill.visibility == View.VISIBLE) {
-                        binding.layoutCompactPill.width.takeIf { it > 0 } ?: (160 * density).toInt()
-                    } else {
-                        layoutParams.width
-                    }
-
-                    // Edge Docking: smoothly snap to boundary if within 20dp of edge
-                    if (layoutParams.x <= dockThreshold) {
-                        layoutParams.x = 8
-                        safeUpdateViewLayout()
-                    } else if (layoutParams.x + windowW >= screenWidth - dockThreshold) {
-                        layoutParams.x = screenWidth - windowW - 8
+                    val shouldSnap = prefs.getBoolean("pref_snap_edges", false)
+                    if (shouldSnap) {
+                        val screenWidth = resources.displayMetrics.widthPixels
+                        val middle = screenWidth / 2
+                        layoutParams.x = if (layoutParams.x + (binding.root.width / 2) < middle) 16 else screenWidth - binding.root.width - 16
                         safeUpdateViewLayout()
                     }
                     true
@@ -326,15 +301,22 @@ class FloatingStopwatchService : Service() {
             }
         }
 
-        // TOUCH GESTURE SEPARATION: Confine window-dragging strictly to dedicated top header and compact grip strip
-        binding.ivPillDragGrip.setOnTouchListener(touchListener)
+        // Attach touch listener across ALL surfaces so the user can drag from ANYWHERE
+        binding.cardFloatingContainer.setOnTouchListener(touchListener)
+        binding.layoutContentBody.setOnTouchListener(touchListener)
         binding.layoutDragHeader.setOnTouchListener(touchListener)
+        binding.tvWindowTitle.setOnTouchListener(touchListener)
         binding.ivDragHandle.setOnTouchListener(touchListener)
+        binding.tvTimerDisplay.setOnTouchListener(touchListener)
+        binding.tvTimerSubtext.setOnTouchListener(touchListener)
+        binding.tvActivePacing.setOnTouchListener(touchListener)
+        binding.layoutAccuracyBanner.setOnTouchListener(touchListener)
+        binding.layoutOptionButtons.root.setOnTouchListener(touchListener)
     }
 
     /**
-     * Dedicated drag-to-resize handle at the bottom-right corner supporting
-     * bidirectional (horizontal and vertical) resizing, plus ScaleGestureDetector.
+     * Dedicated drag-to-resize handle at the bottom-right corner,
+     * plus ScaleGestureDetector for pinch-to-resize.
      */
     @SuppressLint("ClickableViewAccessibility")
     private fun setupResizeListener() {
@@ -348,53 +330,31 @@ class FloatingStopwatchService : Service() {
         val screenWidth = displayMetrics.widthPixels
         val screenHeight = displayMetrics.heightPixels
 
-        val minWidth = (200 * density).toInt()
-        val maxWidth = (screenWidth * 0.95f).toInt()
-        val minHeight = (120 * density).toInt()
-        val maxHeight = (screenHeight * 0.90f).toInt()
-
-        var lastClickTime = 0L
+        val minWidth = (220 * density).toInt()
+        val maxWidth = (screenWidth * 0.90f).toInt()
 
         binding.ivResizeHandle.setOnTouchListener { _, event ->
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
                     startWidth = layoutParams.width
-                    startHeight = if (layoutParams.height > 0) layoutParams.height else binding.root.height
                     startTouchX = event.rawX
-                    startTouchY = event.rawY
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
                     val deltaX = (event.rawX - startTouchX).toInt()
-                    val deltaY = (event.rawY - startTouchY).toInt()
                     val newWidth = (startWidth + deltaX).coerceIn(minWidth, maxWidth)
-                    val newHeight = (startHeight + deltaY).coerceIn(minHeight, maxHeight)
 
                     layoutParams.width = newWidth
-                    layoutParams.height = newHeight
-                    updateScrollContainerForFixedLayout()
+                    layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT
                     safeUpdateViewLayout()
-                    scaleProportionally(newWidth, newHeight)
+                    scaleTypography(newWidth)
                     true
                 }
                 MotionEvent.ACTION_UP -> {
-                    val now = System.currentTimeMillis()
-                    if (now - lastClickTime < 300) {
-                        layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT
-                        updateScrollContainerForWrapContent()
-                        safeUpdateViewLayout()
-                        scaleProportionally(layoutParams.width)
-                        prefs.edit()
-                            .putInt("pref_overlay_width_px", layoutParams.width)
-                            .remove("pref_overlay_height_px")
-                            .apply()
-                    } else {
-                        prefs.edit()
-                            .putInt("pref_overlay_width_px", layoutParams.width)
-                            .putInt("pref_overlay_height_px", layoutParams.height)
-                            .apply()
-                    }
-                    lastClickTime = now
+                    prefs.edit()
+                        .putInt("pref_overlay_width_px", layoutParams.width)
+                        .remove("pref_overlay_height_px")
+                        .apply()
                     true
                 }
                 else -> false
@@ -405,157 +365,26 @@ class FloatingStopwatchService : Service() {
             override fun onScale(detector: ScaleGestureDetector): Boolean {
                 val scale = detector.scaleFactor
                 val newWidth = (layoutParams.width * scale).toInt().coerceIn(minWidth, maxWidth)
-                val currentH = if (layoutParams.height > 0) layoutParams.height else binding.root.height
-                val newHeight = (currentH * scale).toInt().coerceIn(minHeight, maxHeight)
-
                 layoutParams.width = newWidth
-                layoutParams.height = newHeight
-                updateScrollContainerForFixedLayout()
+                layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT
+
                 safeUpdateViewLayout()
-                scaleProportionally(newWidth, newHeight)
+                scaleTypography(newWidth)
                 prefs.edit()
                     .putInt("pref_overlay_width_px", newWidth)
-                    .putInt("pref_overlay_height_px", newHeight)
+                    .remove("pref_overlay_height_px")
                     .apply()
                 return true
             }
         })
     }
 
-    private fun updateScrollContainerForFixedLayout() {
-        (binding.scrollContentContainer.layoutParams as? LinearLayout.LayoutParams)?.let { lp ->
-            if (lp.height != 0 || lp.weight != 1f) {
-                lp.height = 0
-                lp.weight = 1f
-                binding.scrollContentContainer.layoutParams = lp
-            }
-        }
-    }
-
-    private fun updateScrollContainerForWrapContent() {
-        (binding.scrollContentContainer.layoutParams as? LinearLayout.LayoutParams)?.let { lp ->
-            if (lp.height != LinearLayout.LayoutParams.WRAP_CONTENT || lp.weight != 0f) {
-                lp.height = LinearLayout.LayoutParams.WRAP_CONTENT
-                lp.weight = 0f
-                binding.scrollContentContainer.layoutParams = lp
-            }
-        }
-    }
-
-    private fun updateOverlayStateAndHeight(expanded: Boolean) {
-        if (!::binding.isInitialized) return
-
-        val density = resources.displayMetrics.density
-        val screenHeight = resources.displayMetrics.heightPixels
-        val maxComfortableHeight = minOf((320 * density).toInt(), (screenHeight * 0.48f).toInt())
-
-        if (expanded) {
-            // Morph to Expanded Inspector Card
-            binding.layoutCompactPill.visibility = View.GONE
-            binding.layoutExpandedInspector.visibility = View.VISIBLE
-            binding.cardFloatingContainer.alpha = 1.0f
-
-            val defaultWidth = (340 * density).toInt()
-            val savedWidth = prefs.getInt("pref_overlay_width_px", defaultWidth)
-            layoutParams.width = savedWidth
-
-            binding.layoutLapsDrawer.visibility = View.VISIBLE
-            binding.layoutAccuracyBanner.visibility = View.VISIBLE
-
-            updateLapContainerConstraints(expanded = true)
-
-            val widthSpec = View.MeasureSpec.makeMeasureSpec(layoutParams.width, View.MeasureSpec.EXACTLY)
-            val heightSpec = View.MeasureSpec.makeMeasureSpec(0, View.MeasureSpec.UNSPECIFIED)
-            binding.root.measure(widthSpec, heightSpec)
-            val desiredHeight = binding.root.measuredHeight
-
-            if (desiredHeight > maxComfortableHeight) {
-                layoutParams.height = maxComfortableHeight
-                updateScrollContainerForFixedLayout()
-            } else {
-                layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT
-                updateScrollContainerForWrapContent()
-            }
-        } else {
-            // Morph to Minimal Compact Running Pill (wrap_content width, ~44dp height, 55% alpha)
-            binding.layoutCompactPill.visibility = View.VISIBLE
-            binding.layoutExpandedInspector.visibility = View.GONE
-            binding.cardFloatingContainer.alpha = 0.55f
-
-            layoutParams.width = WindowManager.LayoutParams.WRAP_CONTENT
-            layoutParams.height = WindowManager.LayoutParams.WRAP_CONTENT
-            updateScrollContainerForWrapContent()
-        }
-
-        safeUpdateViewLayout()
-    }
-
-    private fun updateLapContainerConstraints(expanded: Boolean) {
-        val count = sessionManager.responses.size
-        val density = resources.displayMetrics.density
-        val maxLogHeight = (220 * density).toInt()
-
-        val lp = binding.rvLaps.layoutParams ?: return
-        if (!expanded || count == 0) {
-            if (lp.height != android.view.ViewGroup.LayoutParams.WRAP_CONTENT) {
-                lp.height = android.view.ViewGroup.LayoutParams.WRAP_CONTENT
-                binding.rvLaps.layoutParams = lp
-            }
-        } else {
-            val estimatedContentHeight = (count * 46 * density).toInt()
-            val targetHeight = minOf(estimatedContentHeight, maxLogHeight)
-            if (lp.height != targetHeight) {
-                lp.height = targetHeight
-                binding.rvLaps.layoutParams = lp
-            }
-        }
-    }
-
-    private fun scaleProportionally(currentWidthPx: Int, currentHeightPx: Int = -1) {
+    private fun scaleTypography(currentWidthPx: Int) {
         val density = resources.displayMetrics.density
         val baseWidthPx = 340 * density
-        val widthRatio = currentWidthPx / baseWidthPx
-        val scaleRatio = if (currentHeightPx > 0) {
-            val baseHeightPx = 280 * density
-            val heightRatio = currentHeightPx / baseHeightPx
-            minOf(widthRatio, heightRatio).coerceIn(0.7f, 1.5f)
-        } else {
-            widthRatio.coerceIn(0.7f, 1.5f)
-        }
-
+        val scaleRatio = (currentWidthPx / baseWidthPx).coerceIn(0.7f, 1.6f)
         val baseFontSize = prefs.getString("pref_font_size", "32")?.toFloatOrNull() ?: 32f
         binding.tvTimerDisplay.textSize = baseFontSize * scaleRatio
-
-        val btnSize = (44 * density * scaleRatio).toInt().coerceIn((32 * density).toInt(), (56 * density).toInt())
-        val controls = listOf(binding.btnPlayPause, binding.btnReset, binding.btnToggleLaps, binding.btnCountdownPreset, binding.btnWallClockToggle)
-        for (btn in controls) {
-            val lp = btn.layoutParams
-            if (lp != null && (lp.width != btnSize || lp.height != btnSize)) {
-                lp.width = btnSize
-                lp.height = btnSize
-                btn.layoutParams = lp
-            }
-        }
-
-        val optHeight = (44 * density * scaleRatio).toInt().coerceIn((30 * density).toInt(), (52 * density).toInt())
-        val optTextSize = (15f * scaleRatio).coerceIn(11f, 18f)
-        val optButtons = listOf(
-            binding.layoutOptionButtons.btnOptionA,
-            binding.layoutOptionButtons.btnOptionB,
-            binding.layoutOptionButtons.btnOptionC,
-            binding.layoutOptionButtons.btnOptionD,
-            binding.layoutOptionButtons.btnOptionE,
-            binding.layoutOptionButtons.btnOptionF,
-            binding.layoutOptionButtons.btnOptionSkip
-        )
-        for (btn in optButtons) {
-            val lp = btn.layoutParams
-            if (lp != null && lp.height != optHeight) {
-                lp.height = optHeight
-                btn.layoutParams = lp
-            }
-            btn.textSize = optTextSize
-        }
     }
 
     private fun setupLapRecyclerView() {
@@ -564,7 +393,6 @@ class FloatingStopwatchService : Service() {
             sessionManager.updateVerification(questionNumber, newStatus)
             updateMetricsBanner()
             lapAdapter.submitList(sessionManager.responses.map { it.copy() })
-            updateOverlayStateAndHeight(expanded = true)
         }
         lapAdapter.isNumericOptionFormat = isNumeric
 
@@ -572,25 +400,7 @@ class FloatingStopwatchService : Service() {
             layoutManager = LinearLayoutManager(this@FloatingStopwatchService)
             adapter = lapAdapter
             itemAnimator = null
-            isNestedScrollingEnabled = true
         }
-
-        binding.rvLaps.addOnItemTouchListener(object : androidx.recyclerview.widget.RecyclerView.OnItemTouchListener {
-            override fun onInterceptTouchEvent(rv: androidx.recyclerview.widget.RecyclerView, e: MotionEvent): Boolean {
-                when (e.actionMasked) {
-                    MotionEvent.ACTION_DOWN -> {
-                        rv.parent?.requestDisallowInterceptTouchEvent(true)
-                    }
-                    MotionEvent.ACTION_UP, MotionEvent.ACTION_CANCEL -> {
-                        rv.parent?.requestDisallowInterceptTouchEvent(false)
-                    }
-                }
-                return false
-            }
-
-            override fun onTouchEvent(rv: androidx.recyclerview.widget.RecyclerView, e: MotionEvent) {}
-            override fun onRequestDisallowInterceptTouchEvent(disallowIntercept: Boolean) {}
-        })
     }
 
     private fun setupOptionButtons() {
@@ -636,35 +446,6 @@ class FloatingStopwatchService : Service() {
             }
         }
 
-        // Dedicated Next Q actions for exam pacer
-        binding.btnPillNextQuestion.setOnClickListener {
-            onNextQuestionTapped()
-        }
-
-        binding.btnInspectorNextQuestion.setOnClickListener {
-            onNextQuestionTapped()
-        }
-
-        binding.btnPillPause.setOnClickListener {
-            if (isRunning) {
-                when (currentMode) {
-                    ClockMode.STOPWATCH -> pauseStopwatch()
-                    ClockMode.COUNTDOWN -> pauseCountdown()
-                }
-            }
-        }
-
-        // Session Diagnostics Card Actions
-        binding.btnDiagStartNew.setOnClickListener {
-            resetStopwatch()
-            startStopwatch()
-        }
-
-        binding.btnDiagDismiss.setOnClickListener {
-            binding.layoutAccuracyBanner.visibility = View.GONE
-            updateOverlayStateAndHeight(expanded = true)
-        }
-
         binding.btnReset.setOnClickListener {
             when (currentMode) {
                 ClockMode.STOPWATCH -> resetStopwatch()
@@ -673,8 +454,8 @@ class FloatingStopwatchService : Service() {
         }
 
         binding.btnToggleLaps.setOnClickListener {
-            val willBeExpanded = binding.layoutLapsDrawer.visibility != View.VISIBLE
-            updateOverlayStateAndHeight(willBeExpanded)
+            val isVisible = binding.layoutLapsDrawer.visibility == View.VISIBLE
+            binding.layoutLapsDrawer.visibility = if (isVisible) View.GONE else View.VISIBLE
         }
 
         binding.btnCountdownPresetChip.setOnClickListener {
@@ -774,7 +555,6 @@ class FloatingStopwatchService : Service() {
             ClockMode.STOPWATCH -> configureStopwatchMode()
             ClockMode.COUNTDOWN -> configureCountdownMode()
         }
-        updateOverlayStateAndHeight(expanded = false)
     }
 
     private fun configureStopwatchMode() {
@@ -830,26 +610,6 @@ class FloatingStopwatchService : Service() {
     // PRACTICE STOPWATCH LOGIC
     // ==========================================
 
-    private fun onNextQuestionTapped() {
-        if (!isRunning) {
-            startStopwatch()
-            return
-        }
-        triggerHapticFeedback()
-
-        val currentElapsed = calculateCurrentElapsedMillis()
-        sessionManager.recordLap(OptionChoice.A, currentElapsed)
-
-        lapAdapter.submitList(sessionManager.responses.toList()) {
-            if (binding.layoutLapsDrawer.visibility == View.VISIBLE && sessionManager.responses.isNotEmpty()) {
-                updateLapContainerConstraints(expanded = true)
-                binding.rvLaps.scrollToPosition(sessionManager.responses.size - 1)
-            }
-        }
-        binding.tvNoLaps.visibility = View.GONE
-        binding.tvLapCountBadge.text = "${sessionManager.responses.size}"
-    }
-
     private fun onOptionTapped(option: OptionChoice) {
         if (!isRunning) return
         if (currentMode != ClockMode.STOPWATCH && currentMode != ClockMode.COUNTDOWN) return
@@ -861,7 +621,6 @@ class FloatingStopwatchService : Service() {
 
         lapAdapter.submitList(sessionManager.responses.toList()) {
             if (binding.layoutLapsDrawer.visibility == View.VISIBLE && sessionManager.responses.isNotEmpty()) {
-                updateLapContainerConstraints(expanded = true)
                 binding.rvLaps.scrollToPosition(sessionManager.responses.size - 1)
             }
         }
@@ -889,10 +648,9 @@ class FloatingStopwatchService : Service() {
         baseStartTime = SystemClock.elapsedRealtime()
 
         binding.btnPlayPause.setImageResource(R.drawable.ic_pause)
+        binding.layoutAccuracyBanner.visibility = View.GONE
         binding.layoutInlinePrompt.visibility = View.GONE
         lapAdapter.isPaused = false
-
-        updateOverlayStateAndHeight(expanded = false)
 
         tickerHandler.post(tickerRunnable)
     }
@@ -908,7 +666,8 @@ class FloatingStopwatchService : Service() {
 
         lapAdapter.isPaused = true
         updateMetricsBanner()
-        updateOverlayStateAndHeight(expanded = true)
+        binding.layoutAccuracyBanner.visibility = View.VISIBLE
+        binding.layoutLapsDrawer.visibility = View.VISIBLE
         binding.rvLaps.scrollToPosition(0)
     }
 
@@ -926,12 +685,13 @@ class FloatingStopwatchService : Service() {
         lapAdapter.submitList(emptyList())
         lapAdapter.isPaused = false
 
+        binding.layoutAccuracyBanner.visibility = View.GONE
+        binding.cardTopTimeSinks.visibility = View.GONE
         binding.layoutInlinePrompt.visibility = View.GONE
         binding.tvLapCountBadge.text = "0"
         binding.tvNoLaps.visibility = View.VISIBLE
 
         updateActivePacingDisplay(0L)
-        updateOverlayStateAndHeight(expanded = false)
     }
 
     private fun calculateCurrentElapsedMillis(): Long {
@@ -955,55 +715,12 @@ class FloatingStopwatchService : Service() {
     }
 
     private fun updateTimerDisplay() {
-        val totalElapsed = calculateCurrentElapsedMillis()
+        val elapsed = calculateCurrentElapsedMillis()
         val showMillis = prefs.getBoolean("pref_show_milliseconds", true)
-        binding.tvTimerDisplay.text = formatFullStopwatchTime(totalElapsed, showMillis)
+        binding.tvTimerDisplay.text = formatFullStopwatchTime(elapsed, showMillis)
 
-        val splitMillis = (totalElapsed - sessionManager.activeSplitBaseTimestamp).coerceAtLeast(0L)
-        updateActivePacingDisplay(splitMillis)
-
-        // Dual-Clock Engine in Compact Pill: Prominent Question Split Timer + Total Session Micro-Text
-        binding.tvPillSplitDisplay.text = formatSplitTime(splitMillis)
-        binding.tvPillTotalDisplay.text = String.format(
-            Locale.US,
-            "Q%02d • Tot: %s",
-            sessionManager.nextQuestionNumber,
-            formatTotalTime(totalElapsed)
-        )
-
-        // Peripheral Metronome Visual Pace Indicator: Green <= 75%, Amber 75-100%, Red > 100%
-        val targetMillis = (sessionManager.targetDurationSeconds * 1000L).coerceAtLeast(1000L)
-        val ratio = splitMillis.toFloat() / targetMillis
-        when {
-            ratio <= 0.75f -> {
-                binding.cardPillPaceRing.strokeColor = Color.parseColor("#00E676")
-            }
-            ratio <= 1.0f -> {
-                binding.cardPillPaceRing.strokeColor = Color.parseColor("#FFAB00")
-            }
-            else -> {
-                binding.cardPillPaceRing.strokeColor = Color.parseColor("#FF5252")
-            }
-        }
-    }
-
-    private fun formatSplitTime(millis: Long): String {
-        val totalSeconds = millis / 1000
-        val minutes = totalSeconds / 60
-        val seconds = totalSeconds % 60
-        val tenths = (millis % 1000) / 100
-        return if (minutes > 0) {
-            String.format(Locale.US, "%02d:%02d.%d", minutes, seconds, tenths)
-        } else {
-            String.format(Locale.US, "%02d.%ds", seconds, tenths)
-        }
-    }
-
-    private fun formatTotalTime(millis: Long): String {
-        val totalSeconds = millis / 1000
-        val minutes = totalSeconds / 60
-        val seconds = totalSeconds % 60
-        return String.format(Locale.US, "%02d:%02d", minutes, seconds)
+        val split = elapsed - sessionManager.activeSplitBaseTimestamp
+        updateActivePacingDisplay(split)
     }
 
     private fun updateActivePacingDisplay(currentSplitMillis: Long) {
@@ -1036,28 +753,39 @@ class FloatingStopwatchService : Service() {
     private fun updateMetricsBanner() {
         val metrics = sessionManager.calculateMetrics()
 
-        binding.tvMetricAccuracy.text = "${metrics.pacingAccuracyScore}%"
-        binding.tvMetricAvgCorrect.text = metrics.formattedAvgTimePerQuestion
-        binding.tvMetricAvgIncorrect.text = metrics.formattedTotalDuration
-        binding.tvMetricBreakdown.text = String.format(
-            Locale.US,
-            "%d Questions • %d On Pace • Target: %ds",
-            metrics.totalAnswered,
-            (metrics.pacingAccuracyScore * metrics.totalAnswered) / 100,
-            sessionManager.targetDurationSeconds
-        )
+        val enableNetMarks = prefs.getBoolean("pref_enable_net_marks", false)
+        if (enableNetMarks) {
+            val markCorrect = prefs.getString("pref_mark_correct", "2.0")?.toFloatOrNull() ?: 2.0f
+            val markNegative = prefs.getString("pref_mark_negative", "0.5")?.toFloatOrNull() ?: 0.5f
+            val netScore = metrics.calculateNetScore(markCorrect, markNegative)
+            val maxScore = metrics.calculateMaxPossibleScore(markCorrect)
 
-        binding.tvOutlierFastest.text = if (metrics.fastestQuestion != null) {
-            "⚡ Fast: Q${metrics.fastestQuestion.questionNumber} (${QuestionResponse.formatSecondsDisplay(metrics.fastestQuestion.splitDurationMillis)})"
+            binding.tvMetricAccuracy.text = "${metrics.accuracyPercentage}%"
+            binding.tvMetricBreakdown.text = String.format(
+                Locale.US,
+                "[%s] • Score: %.1f/%.1f | Accuracy: %d%% (%d/%d)",
+                drillTagRepo.getFormattedSessionTag(),
+                netScore,
+                maxScore,
+                metrics.accuracyPercentage,
+                metrics.totalCorrect,
+                metrics.totalAnswered
+            )
         } else {
-            "⚡ Fast: —"
+            binding.tvMetricAccuracy.text = "${metrics.accuracyPercentage}%"
+            binding.tvMetricBreakdown.text = String.format(
+                Locale.US,
+                "[%s] • %d Solved • %d Correct • %d Wrong • %d Skipped",
+                drillTagRepo.getFormattedSessionTag(),
+                metrics.totalAnswered,
+                metrics.totalCorrect,
+                metrics.totalIncorrect,
+                metrics.totalSkipped
+            )
         }
 
-        binding.tvOutlierSlowest.text = if (metrics.slowestQuestion != null) {
-            "⏳ Slow: Q${metrics.slowestQuestion.questionNumber} (${QuestionResponse.formatSecondsDisplay(metrics.slowestQuestion.splitDurationMillis)})"
-        } else {
-            "⏳ Slow: —"
-        }
+        binding.tvMetricAvgCorrect.text = metrics.formattedAvgCorrect
+        binding.tvMetricAvgIncorrect.text = metrics.formattedAvgIncorrect
 
         // Top Time-Sink Outliers ("Top Bottlenecks")
         if (metrics.topTimeSinks.isNotEmpty()) {
@@ -1171,10 +899,9 @@ class FloatingStopwatchService : Service() {
         isRunning = true
         baseStartTime = SystemClock.elapsedRealtime()
         binding.btnPlayPause.setImageResource(R.drawable.ic_pause)
+        binding.layoutAccuracyBanner.visibility = View.GONE
         binding.layoutInlinePrompt.visibility = View.GONE
         lapAdapter.isPaused = false
-
-        updateOverlayStateAndHeight(expanded = false)
 
         tickerHandler.post(tickerRunnable)
     }
@@ -1192,7 +919,8 @@ class FloatingStopwatchService : Service() {
 
         lapAdapter.isPaused = true
         updateMetricsBanner()
-        updateOverlayStateAndHeight(expanded = true)
+        binding.layoutAccuracyBanner.visibility = View.VISIBLE
+        binding.layoutLapsDrawer.visibility = View.VISIBLE
         binding.rvLaps.scrollToPosition(0)
     }
 
@@ -1211,12 +939,12 @@ class FloatingStopwatchService : Service() {
         lapAdapter.submitList(emptyList())
         lapAdapter.isPaused = false
 
+        binding.layoutAccuracyBanner.visibility = View.GONE
         binding.layoutInlinePrompt.visibility = View.GONE
         binding.tvLapCountBadge.text = "0"
         binding.tvNoLaps.visibility = View.VISIBLE
 
         updateActivePacingDisplay(0L)
-        updateOverlayStateAndHeight(expanded = false)
     }
 
     private fun updateCountdownTicker() {
@@ -1233,7 +961,8 @@ class FloatingStopwatchService : Service() {
 
             lapAdapter.isPaused = true
             updateMetricsBanner()
-            updateOverlayStateAndHeight(expanded = true)
+            binding.layoutAccuracyBanner.visibility = View.VISIBLE
+            binding.layoutLapsDrawer.visibility = View.VISIBLE
             binding.rvLaps.scrollToPosition(0)
         } else {
             binding.tvTimerDisplay.text = formatCountdownTime(remaining)
