@@ -45,6 +45,20 @@
             app:iconSpaceReserved="false" />
 
         <SwitchPreferenceCompat
+            android:key="pref_auto_resume_enabled"
+            android:title="Auto-resume from Last Completed Question"
+            android:summary="Automatically start subsequent drill sessions at N + 1"
+            android:defaultValue="true"
+            app:iconSpaceReserved="false" />
+
+        <Preference
+            android:key="pref_reset_question_index"
+            android:title="Reset Question Index to 1"
+            android:summary="Reset the next drill session to start at Q1"
+            app:iconSpaceReserved="false" />
+
+
+        <SwitchPreferenceCompat
             android:key="pref_show_practice_buttons"
             android:title="@string/pref_show_practice_buttons_title"
             android:summary="@string/pref_show_practice_buttons_summary"

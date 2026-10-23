@@ -1,6 +1,8 @@
 // Forked and modified from com.furyform.floatingclock
 package com.floatingapp.india.manager
 
+import android.content.Context
+import androidx.preference.PreferenceManager
 import com.floatingapp.india.model.OptionChoice
 import com.floatingapp.india.model.QuestionResponse
 import com.floatingapp.india.model.SessionMetrics
@@ -207,5 +209,58 @@ class PracticeSessionManager {
     fun reset() {
         _responses.clear()
         lastRecordedTimestamp = 0L
+    }
+
+    /**
+     * Returns the highest completed question number in this session, or 0 if none.
+     */
+    fun getHighestCompletedQuestion(): Int {
+        return _responses.maxOfOrNull { it.questionNumber } ?: 0
+    }
+
+    fun hasResponses(): Boolean = _responses.isNotEmpty()
+
+    companion object {
+        const val KEY_PREFETCH_QUESTION_START = "pref_prefetch_question_start"
+        const val KEY_AUTO_RESUME_ENABLED = "pref_auto_resume_enabled"
+        const val KEY_LAST_SESSION_END_QUESTION = "pref_last_session_end_question"
+
+        /**
+         * Resolves the starting question number for a new session.
+         * If auto-resume is enabled, returns the persisted next question offset (>= 1).
+         * Otherwise returns 1.
+         */
+        fun getPrefetchedStartingQuestion(context: Context): Int {
+            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+            val isAutoResume = prefs.getBoolean(KEY_AUTO_RESUME_ENABLED, true)
+            return if (isAutoResume) {
+                prefs.getInt(KEY_PREFETCH_QUESTION_START, 1).coerceAtLeast(1)
+            } else {
+                1
+            }
+        }
+
+        /**
+         * Persists the last completed question and prefetch offset for the next session.
+         */
+        fun saveSessionEndOffset(context: Context, highestCompletedQuestion: Int) {
+            if (highestCompletedQuestion <= 0) return
+            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+            prefs.edit()
+                .putInt(KEY_LAST_SESSION_END_QUESTION, highestCompletedQuestion)
+                .putInt(KEY_PREFETCH_QUESTION_START, highestCompletedQuestion + 1)
+                .apply()
+        }
+
+        /**
+         * Resets the starting question prefetch offset back to Q1.
+         */
+        fun resetStartingQuestionIndex(context: Context) {
+            val prefs = PreferenceManager.getDefaultSharedPreferences(context)
+            prefs.edit()
+                .putInt(KEY_PREFETCH_QUESTION_START, 1)
+                .putInt(KEY_LAST_SESSION_END_QUESTION, 0)
+                .apply()
+        }
     }
 }

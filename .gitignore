@@ -46,3 +46,5 @@ Thumbs.db
 *.md
 docs/
 !README.md
+!.antigravity/**
+

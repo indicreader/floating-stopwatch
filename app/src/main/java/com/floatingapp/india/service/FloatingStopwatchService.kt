@@ -145,6 +145,10 @@ class FloatingStopwatchService : Service() {
         loadPreferences()
         if (::binding.isInitialized) {
             applyPreferences()
+            if (!isRunning && sessionManager.responses.isEmpty()) {
+                sessionManager.startingQuestionOffset = PracticeSessionManager.getPrefetchedStartingQuestion(this)
+                updateActivePacingDisplay(0L)
+            }
         }
     }
 
@@ -540,6 +544,17 @@ class FloatingStopwatchService : Service() {
                 showQuestionNumberPrompt()
             }
         }
+
+        binding.tvActivePacing.setOnLongClickListener {
+            if (!isRunning && sessionManager.responses.isEmpty()) {
+                PracticeSessionManager.resetStartingQuestionIndex(this)
+                sessionManager.startingQuestionOffset = 1
+                updateActivePacingDisplay(0L)
+                triggerHapticFeedback()
+                Toast.makeText(this, "Question index reset to Q1", Toast.LENGTH_SHORT).show()
+                true
+            } else false
+        }
     }
 
     @SuppressLint("ClickableViewAccessibility")
@@ -593,6 +608,7 @@ class FloatingStopwatchService : Service() {
         val offsetInput = binding.etInlineQuestionOffset.text.toString().toIntOrNull() ?: 1
         sessionManager.startingQuestionOffset = if (offsetInput > 0) offsetInput else 1
         hideQuestionNumberPrompt()
+        updateActivePacingDisplay(0L)
 
         if (currentMode == ClockMode.COUNTDOWN) {
             startCountdown()
@@ -604,10 +620,8 @@ class FloatingStopwatchService : Service() {
     private fun cancelQuestionOffsetPrompt() {
         hideQuestionNumberPrompt()
         resetDragState()
-        when (currentMode) {
-            ClockMode.STOPWATCH -> resetStopwatch()
-            ClockMode.COUNTDOWN -> resetCountdown()
-        }
+        sessionManager.startingQuestionOffset = PracticeSessionManager.getPrefetchedStartingQuestion(this)
+        updateActivePacingDisplay(0L)
     }
 
     private fun setOverlayFocusable(focusable: Boolean) {
@@ -734,7 +748,8 @@ class FloatingStopwatchService : Service() {
         triggerHapticFeedback()
 
         val currentElapsed = calculateCurrentElapsedMillis()
-        sessionManager.recordLap(option, currentElapsed)
+        val recordedResponse = sessionManager.recordLap(option, currentElapsed)
+        PracticeSessionManager.saveSessionEndOffset(this, recordedResponse.questionNumber)
         updateLiveAveragePace(currentElapsed)
 
         lapAdapter.submitList(sessionManager.responses.toList()) {
@@ -776,6 +791,8 @@ class FloatingStopwatchService : Service() {
         totalAccumulatedMillis += (SystemClock.elapsedRealtime() - baseStartTime)
         tickerHandler.removeCallbacks(tickerRunnable)
 
+        persistSessionEndOffsetIfNeeded()
+
         binding.btnPlayPause.setImageResource(R.drawable.ic_play_arrow)
 
         lapAdapter.isPaused = true
@@ -791,10 +808,12 @@ class FloatingStopwatchService : Service() {
         tickerHandler.removeCallbacks(tickerRunnable)
         resetDragState()
 
+        persistSessionEndOffsetIfNeeded()
+
         totalAccumulatedMillis = 0L
         baseStartTime = 0L
         sessionManager.reset()
-        sessionManager.startingQuestionOffset = 1
+        sessionManager.startingQuestionOffset = PracticeSessionManager.getPrefetchedStartingQuestion(this)
 
         binding.tvTimerDisplay.text = "00:00:00.0"
         binding.btnPlayPause.setImageResource(R.drawable.ic_play_arrow)
@@ -848,10 +867,9 @@ class FloatingStopwatchService : Service() {
 
         binding.tvActivePacing.text = String.format(
             Locale.US,
-            "Active %s • Split: %s (Target: %ds)",
+            "Active %s • Split: %s",
             qIndex,
-            formattedSplit,
-            targetSec
+            formattedSplit
         )
 
         val isOvertime = currentSplitMillis > (targetSec * 1000L)
@@ -866,9 +884,9 @@ class FloatingStopwatchService : Service() {
         val count = sessionManager.responses.size
         if (count > 0 && currentElapsedMillis > 0L) {
             val avgMillis = currentElapsedMillis / count
-            binding.tvAvgPaceBadge.text = "Avg: ${SessionMetrics.formatAveragePace(avgMillis)}"
+            binding.layoutOptionButtons.tvAvgPaceBadge.text = "Avg: ${SessionMetrics.formatAveragePace(avgMillis)}"
         } else {
-            binding.tvAvgPaceBadge.text = "Avg: --"
+            binding.layoutOptionButtons.tvAvgPaceBadge.text = "Avg: --"
         }
     }
 
@@ -1049,6 +1067,7 @@ class FloatingStopwatchService : Service() {
         if (countdownRemainingMillis < 0L) countdownRemainingMillis = 0L
 
         tickerHandler.removeCallbacks(tickerRunnable)
+        persistSessionEndOffsetIfNeeded()
         binding.btnPlayPause.setImageResource(R.drawable.ic_play_arrow)
 
         lapAdapter.isPaused = true
@@ -1064,6 +1083,8 @@ class FloatingStopwatchService : Service() {
         tickerHandler.removeCallbacks(tickerRunnable)
         resetDragState()
 
+        persistSessionEndOffsetIfNeeded()
+
         if (countdownTotalMillis <= 0L) {
             countdownTotalMillis = countdownPresets[countdownPresetIndex]
         }
@@ -1072,7 +1093,7 @@ class FloatingStopwatchService : Service() {
         binding.tvTimerDisplay.text = formatCountdownTime(countdownRemainingMillis)
 
         sessionManager.reset()
-        sessionManager.startingQuestionOffset = 1
+        sessionManager.startingQuestionOffset = PracticeSessionManager.getPrefetchedStartingQuestion(this)
         lapAdapter.submitList(emptyList())
         lapAdapter.isPaused = false
 
@@ -1092,6 +1113,7 @@ class FloatingStopwatchService : Service() {
         if (remaining <= 0L) {
             countdownRemainingMillis = 0L
             isRunning = false
+            persistSessionEndOffsetIfNeeded()
             binding.tvTimerDisplay.text = "00:00:00.0"
             binding.btnPlayPause.setImageResource(R.drawable.ic_play_arrow)
             triggerHapticFeedback()
@@ -1183,8 +1205,16 @@ class FloatingStopwatchService : Service() {
         } catch (_: Exception) {}
     }
 
+    private fun persistSessionEndOffsetIfNeeded() {
+        val highest = sessionManager.getHighestCompletedQuestion()
+        if (highest > 0) {
+            PracticeSessionManager.saveSessionEndOffset(this, highest)
+        }
+    }
+
     override fun onDestroy() {
         super.onDestroy()
+        persistSessionEndOffsetIfNeeded()
         prefs.unregisterOnSharedPreferenceChangeListener(prefChangeListener)
         tickerHandler.removeCallbacks(tickerRunnable)
         try {

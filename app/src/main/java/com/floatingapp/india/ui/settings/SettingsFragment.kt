@@ -3,10 +3,12 @@ package com.floatingapp.india.ui.settings
 
 import android.os.Build
 import android.os.Bundle
+import android.widget.Toast
 import androidx.preference.Preference
 import androidx.preference.PreferenceFragmentCompat
 import com.floatingapp.india.R
 import com.floatingapp.india.manager.GitHubAppUpdater
+import com.floatingapp.india.manager.PracticeSessionManager
 import com.floatingapp.india.manager.UpdateReleaseInfo
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import java.io.File
@@ -38,6 +40,20 @@ class SettingsFragment : PreferenceFragmentCompat() {
         // Setup Fork Attribution click listener
         findPreference<Preference>("pref_fork_attribution")?.setOnPreferenceClickListener {
             showAttributionDialog()
+            true
+        }
+
+        // Setup Reset Question Index preference
+        val resetPref = findPreference<Preference>("pref_reset_question_index")
+        fun updateResetSummary() {
+            val nextQ = PracticeSessionManager.getPrefetchedStartingQuestion(requireContext())
+            resetPref?.summary = "Next drill session will start at Q$nextQ. Tap to reset back to Q1."
+        }
+        updateResetSummary()
+        resetPref?.setOnPreferenceClickListener {
+            PracticeSessionManager.resetStartingQuestionIndex(requireContext())
+            updateResetSummary()
+            Toast.makeText(requireContext(), "Next session question index reset to Q1", Toast.LENGTH_SHORT).show()
             true
         }
     }

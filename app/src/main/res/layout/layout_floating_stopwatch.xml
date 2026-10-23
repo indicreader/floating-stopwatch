@@ -180,24 +180,10 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:gravity="center"
-                    tools:text="Active Q01 • Split: 00:14.2 (Target: 30s)"
+                    tools:text="Active Q01 • Split: 00:14.2"
                     android:fontFamily="monospace"
                     android:textSize="11sp"
                     android:textColor="#859990" />
-
-                <TextView
-                    android:id="@+id/tv_avg_pace_badge"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:paddingHorizontal="6dp"
-                    android:paddingVertical="1dp"
-                    android:background="@drawable/bg_badge_skip"
-                    android:fontFamily="monospace"
-                    android:textSize="10sp"
-                    android:textStyle="bold"
-                    android:textColor="#00E676"
-                    android:text="Avg: --" />
 
             </LinearLayout>
 
