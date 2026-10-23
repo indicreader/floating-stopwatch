@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:gravity="center"
+    android:paddingTop="24dp"
+    android:paddingBottom="36dp"
+    android:orientation="vertical">
+
+    <TextView
+        android:id="@+id/tv_footer_made_in_india"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="made with ❤️ in India"
+        android:textSize="13sp"
+        android:textStyle="bold"
+        android:textColor="#859990"
+        android:gravity="center" />
+
+</LinearLayout>

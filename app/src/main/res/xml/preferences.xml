@@ -83,12 +83,6 @@
             app:useSimpleSummaryProvider="true"
             app:iconSpaceReserved="false" />
 
-        <Preference
-            android:key="pref_fork_attribution"
-            android:title="@string/pref_fork_attribution_title"
-            android:summary="@string/pref_fork_attribution_summary"
-            app:iconSpaceReserved="false" />
-
     </PreferenceCategory>
 
     <!-- 2. Original App Clock Appearance Category -->
@@ -159,6 +153,31 @@
             android:title="@string/pref_snap_edges_title"
             android:summary="@string/pref_snap_edges_summary"
             android:defaultValue="false"
+            app:iconSpaceReserved="false" />
+
+    </PreferenceCategory>
+
+    <!-- 4. About & Updates Category -->
+    <PreferenceCategory
+        android:title="About &amp; Updates"
+        app:iconSpaceReserved="false">
+
+        <Preference
+            android:key="pref_check_updates"
+            android:title="Check for Updates"
+            android:summary="Tap to check GitHub releases"
+            app:iconSpaceReserved="false" />
+
+        <Preference
+            android:key="pref_fork_attribution"
+            android:title="@string/pref_fork_attribution_title"
+            android:summary="@string/pref_fork_attribution_summary"
+            app:iconSpaceReserved="false" />
+
+        <Preference
+            android:key="pref_made_in_india"
+            android:layout="@layout/preference_footer_attribution"
+            android:selectable="false"
             app:iconSpaceReserved="false" />
 
     </PreferenceCategory>
