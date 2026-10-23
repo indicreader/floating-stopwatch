@@ -40,9 +40,13 @@ import com.floatingapp.india.manager.DrillTagRepository
 import com.floatingapp.india.manager.PracticeSessionManager
 import com.floatingapp.india.model.OptionChoice
 import com.floatingapp.india.model.QuestionResponse
+import com.floatingapp.india.model.SessionMetrics
 import com.floatingapp.india.ui.lap.LapAdapter
 import com.floatingapp.india.ui.settings.SettingsActivity
+import android.graphics.Rect
 import android.graphics.Typeface
+import android.view.inputmethod.EditorInfo
+import android.view.inputmethod.InputMethodManager
 import android.widget.LinearLayout
 import android.widget.TextView
 import com.floatingapp.india.model.VerificationStatus
@@ -78,6 +82,21 @@ class FloatingStopwatchService : Service() {
     private lateinit var scaleGestureDetector: ScaleGestureDetector
 
     private var currentMode: ClockMode = ClockMode.STOPWATCH
+
+    // Drag tracking state
+    private var dragInitialX = 0
+    private var dragInitialY = 0
+    private var dragTouchDownX = 0f
+    private var dragTouchDownY = 0f
+    private var isDraggingOverlay = false
+
+    private fun resetDragState() {
+        dragInitialX = 0
+        dragInitialY = 0
+        dragTouchDownX = 0f
+        dragTouchDownY = 0f
+        isDraggingOverlay = false
+    }
 
     // Practice Stopwatch State
     private val sessionManager = PracticeSessionManager()
@@ -253,17 +272,13 @@ class FloatingStopwatchService : Service() {
     }
 
     /**
-     * Enables dragging the overlay smoothly from ANYWHERE on the card,
-     * with two-finger pinch-to-zoom support.
+     * Enables dragging the overlay strictly via the dedicated drag header,
+     * window title, and drag handle icon. Interactive child buttons consume
+     * their own touch events.
      */
     @SuppressLint("ClickableViewAccessibility")
     private fun setupDragTouchListener() {
-        var initialX = 0
-        var initialY = 0
-        var initialTouchX = 0f
-        var initialTouchY = 0f
-
-        val touchListener = View.OnTouchListener { _, event ->
+        val touchListener = View.OnTouchListener { view, event ->
             val isLocked = prefs.getBoolean("pref_lock_position", false)
             if (isLocked) return@OnTouchListener false
 
@@ -273,45 +288,67 @@ class FloatingStopwatchService : Service() {
                 return@OnTouchListener true
             }
 
+            // If touching the header bar, ensure touches on interactive child buttons are not intercepted
+            if (view == binding.layoutDragHeader) {
+                val interactiveViews = listOf(
+                    binding.btnFloatingSettings,
+                    binding.btnClose,
+                    binding.btnCountdownPresetChip,
+                    binding.btnFloatingDrillTag
+                )
+                val hitRect = Rect()
+                for (child in interactiveViews) {
+                    if (child.visibility == View.VISIBLE) {
+                        child.getHitRect(hitRect)
+                        if (hitRect.contains(event.x.toInt(), event.y.toInt())) {
+                            return@OnTouchListener false
+                        }
+                    }
+                }
+            }
+
             when (event.action) {
                 MotionEvent.ACTION_DOWN -> {
-                    initialX = layoutParams.x
-                    initialY = layoutParams.y
-                    initialTouchX = event.rawX
-                    initialTouchY = event.rawY
+                    dragInitialX = layoutParams.x
+                    dragInitialY = layoutParams.y
+                    dragTouchDownX = event.rawX
+                    dragTouchDownY = event.rawY
+                    isDraggingOverlay = true
                     true
                 }
                 MotionEvent.ACTION_MOVE -> {
-                    layoutParams.x = initialX + (event.rawX - initialTouchX).toInt()
-                    layoutParams.y = initialY + (event.rawY - initialTouchY).toInt()
-                    safeUpdateViewLayout()
-                    true
+                    if (isDraggingOverlay) {
+                        layoutParams.x = dragInitialX + (event.rawX - dragTouchDownX).toInt()
+                        layoutParams.y = dragInitialY + (event.rawY - dragTouchDownY).toInt()
+                        safeUpdateViewLayout()
+                        true
+                    } else false
                 }
                 MotionEvent.ACTION_UP -> {
-                    val shouldSnap = prefs.getBoolean("pref_snap_edges", false)
-                    if (shouldSnap) {
-                        val screenWidth = resources.displayMetrics.widthPixels
-                        val middle = screenWidth / 2
-                        layoutParams.x = if (layoutParams.x + (binding.root.width / 2) < middle) 16 else screenWidth - binding.root.width - 16
-                        safeUpdateViewLayout()
-                    }
-                    true
+                    if (isDraggingOverlay) {
+                        isDraggingOverlay = false
+                        val shouldSnap = prefs.getBoolean("pref_snap_edges", false)
+                        if (shouldSnap) {
+                            val screenWidth = resources.displayMetrics.widthPixels
+                            val middle = screenWidth / 2
+                            layoutParams.x = if (layoutParams.x + (binding.root.width / 2) < middle) 16 else screenWidth - binding.root.width - 16
+                            safeUpdateViewLayout()
+                        }
+                        true
+                    } else false
+                }
+                MotionEvent.ACTION_CANCEL -> {
+                    resetDragState()
+                    false
                 }
                 else -> false
             }
         }
 
-        // Attach touch listener across ALL surfaces so the user can drag from ANYWHERE
-        binding.cardFloatingContainer.setOnTouchListener(touchListener)
-        binding.layoutContentBody.setOnTouchListener(touchListener)
+        // Attach touch listener STRICTLY to the header, drag handle, and title
         binding.layoutDragHeader.setOnTouchListener(touchListener)
-        binding.tvWindowTitle.setOnTouchListener(touchListener)
         binding.ivDragHandle.setOnTouchListener(touchListener)
-        binding.tvTimerDisplay.setOnTouchListener(touchListener)
-        binding.tvTimerSubtext.setOnTouchListener(touchListener)
-        binding.tvActivePacing.setOnTouchListener(touchListener)
-        binding.layoutAccuracyBanner.setOnTouchListener(touchListener)
-        binding.layoutOptionButtons.root.setOnTouchListener(touchListener)
+        binding.tvWindowTitle.setOnTouchListener(touchListener)
     }
 
     /**
@@ -428,6 +465,7 @@ class FloatingStopwatchService : Service() {
         if (updated != null) {
             triggerHapticFeedback()
             lapAdapter.submitList(sessionManager.responses.map { it.copy() })
+            updateLiveAveragePace()
             Toast.makeText(this, "Overrode Q${updated.questionNumber} to ${option.label}", Toast.LENGTH_SHORT).show()
             return true
         }
@@ -496,23 +534,102 @@ class FloatingStopwatchService : Service() {
         binding.btnClose.setOnClickListener {
             stopSelf()
         }
-    }
 
-    private fun setupInlinePrompt() {
-        binding.btnInlineStartConfirm.setOnClickListener {
-            val offsetInput = binding.etInlineQuestionOffset.text.toString().toIntOrNull() ?: 1
-            sessionManager.startingQuestionOffset = if (offsetInput > 0) offsetInput else 1
-            binding.layoutInlinePrompt.visibility = View.GONE
-
-            layoutParams.flags = layoutParams.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
-            safeUpdateViewLayout()
-
-            if (currentMode == ClockMode.COUNTDOWN) {
-                startCountdown()
-            } else {
-                startStopwatch()
+        binding.tvActivePacing.setOnClickListener {
+            if (!isRunning && sessionManager.responses.isEmpty()) {
+                showQuestionNumberPrompt()
             }
         }
+    }
+
+    @SuppressLint("ClickableViewAccessibility")
+    private fun setupInlinePrompt() {
+        binding.btnInlineStartConfirm.setOnClickListener {
+            confirmQuestionOffset()
+        }
+
+        binding.btnInlineCancel.setOnClickListener {
+            cancelQuestionOffsetPrompt()
+        }
+
+        binding.etInlineQuestionOffset.setOnEditorActionListener { _, actionId, _ ->
+            if (actionId == EditorInfo.IME_ACTION_DONE || actionId == EditorInfo.IME_ACTION_GO) {
+                confirmQuestionOffset()
+                true
+            } else {
+                false
+            }
+        }
+
+        binding.etInlineQuestionOffset.setOnTouchListener { _, event ->
+            if (event.action == MotionEvent.ACTION_UP) {
+                setOverlayFocusable(true)
+                binding.etInlineQuestionOffset.requestFocus()
+                showSoftKeyboard(binding.etInlineQuestionOffset)
+            }
+            false
+        }
+    }
+
+    private fun showQuestionNumberPrompt() {
+        binding.etInlineQuestionOffset.setText(sessionManager.startingQuestionOffset.toString())
+        binding.layoutInlinePrompt.visibility = View.VISIBLE
+        setOverlayFocusable(true)
+        binding.etInlineQuestionOffset.post {
+            binding.etInlineQuestionOffset.requestFocus()
+            binding.etInlineQuestionOffset.selectAll()
+            showSoftKeyboard(binding.etInlineQuestionOffset)
+        }
+    }
+
+    private fun hideQuestionNumberPrompt() {
+        hideSoftKeyboard(binding.etInlineQuestionOffset)
+        binding.etInlineQuestionOffset.clearFocus()
+        binding.layoutInlinePrompt.visibility = View.GONE
+        setOverlayFocusable(false)
+    }
+
+    private fun confirmQuestionOffset() {
+        val offsetInput = binding.etInlineQuestionOffset.text.toString().toIntOrNull() ?: 1
+        sessionManager.startingQuestionOffset = if (offsetInput > 0) offsetInput else 1
+        hideQuestionNumberPrompt()
+
+        if (currentMode == ClockMode.COUNTDOWN) {
+            startCountdown()
+        } else {
+            startStopwatch()
+        }
+    }
+
+    private fun cancelQuestionOffsetPrompt() {
+        hideQuestionNumberPrompt()
+        resetDragState()
+        when (currentMode) {
+            ClockMode.STOPWATCH -> resetStopwatch()
+            ClockMode.COUNTDOWN -> resetCountdown()
+        }
+    }
+
+    private fun setOverlayFocusable(focusable: Boolean) {
+        val hasFocusable = (layoutParams.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE) == 0
+        if (hasFocusable != focusable) {
+            if (focusable) {
+                layoutParams.flags = layoutParams.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
+            } else {
+                layoutParams.flags = layoutParams.flags or WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
+            }
+            safeUpdateViewLayout()
+        }
+    }
+
+    private fun showSoftKeyboard(view: View) {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+        imm?.showSoftInput(view, InputMethodManager.SHOW_IMPLICIT)
+    }
+
+    private fun hideSoftKeyboard(view: View) {
+        val imm = getSystemService(Context.INPUT_METHOD_SERVICE) as? InputMethodManager
+        imm?.hideSoftInputFromWindow(view.windowToken, 0)
     }
 
     private fun applyPreferences() {
@@ -618,6 +735,7 @@ class FloatingStopwatchService : Service() {
 
         val currentElapsed = calculateCurrentElapsedMillis()
         sessionManager.recordLap(option, currentElapsed)
+        updateLiveAveragePace(currentElapsed)
 
         lapAdapter.submitList(sessionManager.responses.toList()) {
             if (binding.layoutLapsDrawer.visibility == View.VISIBLE && sessionManager.responses.isNotEmpty()) {
@@ -632,11 +750,7 @@ class FloatingStopwatchService : Service() {
         val shouldPrompt = prefs.getBoolean("pref_prompt_start_question_num", true)
 
         if (shouldPrompt && totalAccumulatedMillis == 0L && sessionManager.responses.isEmpty()) {
-            binding.etInlineQuestionOffset.setText(sessionManager.startingQuestionOffset.toString())
-            binding.layoutInlinePrompt.visibility = View.VISIBLE
-
-            layoutParams.flags = layoutParams.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
-            safeUpdateViewLayout()
+            showQuestionNumberPrompt()
         } else {
             startStopwatch()
         }
@@ -665,6 +779,7 @@ class FloatingStopwatchService : Service() {
         binding.btnPlayPause.setImageResource(R.drawable.ic_play_arrow)
 
         lapAdapter.isPaused = true
+        updateLiveAveragePace()
         updateMetricsBanner()
         binding.layoutAccuracyBanner.visibility = View.VISIBLE
         binding.layoutLapsDrawer.visibility = View.VISIBLE
@@ -674,10 +789,12 @@ class FloatingStopwatchService : Service() {
     private fun resetStopwatch() {
         isRunning = false
         tickerHandler.removeCallbacks(tickerRunnable)
+        resetDragState()
 
         totalAccumulatedMillis = 0L
         baseStartTime = 0L
         sessionManager.reset()
+        sessionManager.startingQuestionOffset = 1
 
         binding.tvTimerDisplay.text = "00:00:00.0"
         binding.btnPlayPause.setImageResource(R.drawable.ic_play_arrow)
@@ -687,11 +804,12 @@ class FloatingStopwatchService : Service() {
 
         binding.layoutAccuracyBanner.visibility = View.GONE
         binding.cardTopTimeSinks.visibility = View.GONE
-        binding.layoutInlinePrompt.visibility = View.GONE
+        hideQuestionNumberPrompt()
         binding.tvLapCountBadge.text = "0"
         binding.tvNoLaps.visibility = View.VISIBLE
 
         updateActivePacingDisplay(0L)
+        updateLiveAveragePace(0L)
     }
 
     private fun calculateCurrentElapsedMillis(): Long {
@@ -744,6 +862,16 @@ class FloatingStopwatchService : Service() {
         }
     }
 
+    private fun updateLiveAveragePace(currentElapsedMillis: Long = calculateCurrentElapsedMillis()) {
+        val count = sessionManager.responses.size
+        if (count > 0 && currentElapsedMillis > 0L) {
+            val avgMillis = currentElapsedMillis / count
+            binding.tvAvgPaceBadge.text = "Avg: ${SessionMetrics.formatAveragePace(avgMillis)}"
+        } else {
+            binding.tvAvgPaceBadge.text = "Avg: --"
+        }
+    }
+
     private fun updateDrillTagBadge() {
         val formatted = drillTagRepo.getFormattedSessionTag()
         binding.btnFloatingDrillTag.text = formatted
@@ -751,7 +879,17 @@ class FloatingStopwatchService : Service() {
     }
 
     private fun updateMetricsBanner() {
-        val metrics = sessionManager.calculateMetrics()
+        val elapsed = calculateCurrentElapsedMillis()
+        val metrics = sessionManager.calculateMetrics(elapsed)
+
+        binding.tvMetricAvgPace.text = metrics.formattedAvgPace
+        binding.tvMetricAccuracy.text = "${metrics.accuracyPercentage}%"
+        binding.tvMetricAvgCorrect.text = metrics.formattedAvgCorrect
+        binding.tvMetricAvgIncorrect.text = metrics.formattedAvgIncorrect
+
+        val formattedTotal = QuestionResponse.formatDuration(elapsed)
+        val avgPace = metrics.formattedAvgPace
+        val totalQCount = metrics.totalAnswered + metrics.totalSkipped
 
         val enableNetMarks = prefs.getBoolean("pref_enable_net_marks", false)
         if (enableNetMarks) {
@@ -760,11 +898,13 @@ class FloatingStopwatchService : Service() {
             val netScore = metrics.calculateNetScore(markCorrect, markNegative)
             val maxScore = metrics.calculateMaxPossibleScore(markCorrect)
 
-            binding.tvMetricAccuracy.text = "${metrics.accuracyPercentage}%"
             binding.tvMetricBreakdown.text = String.format(
                 Locale.US,
-                "[%s] • Score: %.1f/%.1f | Accuracy: %d%% (%d/%d)",
+                "[%s] • %d Qs (Total: %s • Avg: %s) • Score: %.1f/%.1f | Acc: %d%% (%d/%d)",
                 drillTagRepo.getFormattedSessionTag(),
+                totalQCount,
+                formattedTotal,
+                avgPace,
                 netScore,
                 maxScore,
                 metrics.accuracyPercentage,
@@ -772,20 +912,18 @@ class FloatingStopwatchService : Service() {
                 metrics.totalAnswered
             )
         } else {
-            binding.tvMetricAccuracy.text = "${metrics.accuracyPercentage}%"
             binding.tvMetricBreakdown.text = String.format(
                 Locale.US,
-                "[%s] • %d Solved • %d Correct • %d Wrong • %d Skipped",
+                "[%s] • %d Solved (Total: %s • Avg: %s) • %d Correct • %d Wrong • %d Skipped",
                 drillTagRepo.getFormattedSessionTag(),
-                metrics.totalAnswered,
+                totalQCount,
+                formattedTotal,
+                avgPace,
                 metrics.totalCorrect,
                 metrics.totalIncorrect,
                 metrics.totalSkipped
             )
         }
-
-        binding.tvMetricAvgCorrect.text = metrics.formattedAvgCorrect
-        binding.tvMetricAvgIncorrect.text = metrics.formattedAvgIncorrect
 
         // Top Time-Sink Outliers ("Top Bottlenecks")
         if (metrics.topTimeSinks.isNotEmpty()) {
@@ -879,11 +1017,7 @@ class FloatingStopwatchService : Service() {
         val shouldPrompt = prefs.getBoolean("pref_prompt_start_question_num", true)
 
         if (shouldPrompt && (countdownRemainingMillis == countdownTotalMillis || countdownRemainingMillis == 0L) && sessionManager.responses.isEmpty()) {
-            binding.etInlineQuestionOffset.setText(sessionManager.startingQuestionOffset.toString())
-            binding.layoutInlinePrompt.visibility = View.VISIBLE
-
-            layoutParams.flags = layoutParams.flags and WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE.inv()
-            safeUpdateViewLayout()
+            showQuestionNumberPrompt()
         } else {
             startCountdown()
         }
@@ -918,6 +1052,7 @@ class FloatingStopwatchService : Service() {
         binding.btnPlayPause.setImageResource(R.drawable.ic_play_arrow)
 
         lapAdapter.isPaused = true
+        updateLiveAveragePace()
         updateMetricsBanner()
         binding.layoutAccuracyBanner.visibility = View.VISIBLE
         binding.layoutLapsDrawer.visibility = View.VISIBLE
@@ -927,6 +1062,7 @@ class FloatingStopwatchService : Service() {
     private fun resetCountdown() {
         isRunning = false
         tickerHandler.removeCallbacks(tickerRunnable)
+        resetDragState()
 
         if (countdownTotalMillis <= 0L) {
             countdownTotalMillis = countdownPresets[countdownPresetIndex]
@@ -936,15 +1072,17 @@ class FloatingStopwatchService : Service() {
         binding.tvTimerDisplay.text = formatCountdownTime(countdownRemainingMillis)
 
         sessionManager.reset()
+        sessionManager.startingQuestionOffset = 1
         lapAdapter.submitList(emptyList())
         lapAdapter.isPaused = false
 
         binding.layoutAccuracyBanner.visibility = View.GONE
-        binding.layoutInlinePrompt.visibility = View.GONE
+        hideQuestionNumberPrompt()
         binding.tvLapCountBadge.text = "0"
         binding.tvNoLaps.visibility = View.VISIBLE
 
         updateActivePacingDisplay(0L)
+        updateLiveAveragePace(0L)
     }
 
     private fun updateCountdownTicker() {
@@ -960,6 +1098,7 @@ class FloatingStopwatchService : Service() {
             Toast.makeText(this, "Countdown Finished!", Toast.LENGTH_SHORT).show()
 
             lapAdapter.isPaused = true
+            updateLiveAveragePace()
             updateMetricsBanner()
             binding.layoutAccuracyBanner.visibility = View.VISIBLE
             binding.layoutLapsDrawer.visibility = View.VISIBLE

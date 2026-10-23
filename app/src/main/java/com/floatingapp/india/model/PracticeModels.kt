@@ -83,6 +83,7 @@ data class QuestionResponse(
  */
 data class SessionMetrics(
     val accuracyPercentage: Int = 0,
+    val averageTimePerQuestionMillis: Long = 0L,
     val averageCorrectMillis: Long = 0L,
     val averageIncorrectMillis: Long = 0L,
     val totalAnswered: Int = 0,
@@ -90,8 +91,12 @@ data class SessionMetrics(
     val totalIncorrect: Int = 0,
     val totalSkipped: Int = 0,
     val totalFlagged: Int = 0,
-    val topTimeSinks: List<QuestionResponse> = emptyList()
+    val topTimeSinks: List<QuestionResponse> = emptyList(),
+    val totalElapsedMillis: Long = 0L
 ) {
+    val formattedAvgPace: String
+        get() = formatAveragePace(averageTimePerQuestionMillis)
+
     val formattedAvgCorrect: String
         get() = if (totalCorrect > 0) QuestionResponse.formatSecondsDisplay(averageCorrectMillis) else "—"
 
@@ -104,5 +109,28 @@ data class SessionMetrics(
 
     fun calculateMaxPossibleScore(markCorrect: Float): Float {
         return (totalAnswered + totalSkipped) * markCorrect
+    }
+
+    companion object {
+        fun formatAveragePace(millis: Long): String {
+            if (millis <= 0L) return "--"
+            val totalSeconds = millis / 1000
+            return if (totalSeconds < 60) {
+                val tenths = (millis % 1000) / 100
+                if (tenths == 0L) {
+                    "${totalSeconds}s"
+                } else {
+                    String.format(Locale.US, "%d.%ds", totalSeconds, tenths)
+                }
+            } else {
+                val minutes = totalSeconds / 60
+                val seconds = totalSeconds % 60
+                if (seconds == 0L) {
+                    "${minutes}m"
+                } else {
+                    String.format(Locale.US, "%dm %02ds", minutes, seconds)
+                }
+            }
+        }
     }
 }

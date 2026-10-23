@@ -166,17 +166,40 @@
                 android:visibility="gone"
                 tools:text="TIME REMAINING" />
 
-            <!-- 3. Active Question & Pacing Indicator -->
-            <TextView
-                android:id="@+id/tv_active_pacing"
+            <!-- 3. Active Question & Pacing Indicator Bar with Live Average Pace -->
+            <LinearLayout
+                android:id="@+id/layout_active_stats_bar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginBottom="6dp"
                 android:gravity="center"
-                tools:text="Active Q01 • Split: 00:14.2 (Target: 30s)"
-                android:fontFamily="monospace"
-                android:textSize="11sp"
-                android:textColor="#859990" />
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/tv_active_pacing"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:gravity="center"
+                    tools:text="Active Q01 • Split: 00:14.2 (Target: 30s)"
+                    android:fontFamily="monospace"
+                    android:textSize="11sp"
+                    android:textColor="#859990" />
+
+                <TextView
+                    android:id="@+id/tv_avg_pace_badge"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:paddingHorizontal="6dp"
+                    android:paddingVertical="1dp"
+                    android:background="@drawable/bg_badge_skip"
+                    android:fontFamily="monospace"
+                    android:textSize="10sp"
+                    android:textStyle="bold"
+                    android:textColor="#00E676"
+                    android:text="Avg: --" />
+
+            </LinearLayout>
 
             <!-- 4. Inline Starting Question Offset Prompt (Crash-Free, No External Dialog) -->
             <LinearLayout
@@ -207,6 +230,7 @@
                     android:background="@drawable/bg_rounded_input_rect"
                     android:gravity="center"
                     android:inputType="number"
+                    android:imeOptions="actionDone"
                     android:text="1"
                     android:textColor="#00E676"
                     android:textSize="14sp"
@@ -223,6 +247,19 @@
                     android:textSize="11sp"
                     android:backgroundTint="#00E676"
                     android:textColor="#0C1D17"
+                    app:cornerRadius="8dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp" />
+
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_inline_cancel"
+                    android:layout_width="wrap_content"
+                    android:layout_height="36dp"
+                    android:layout_marginStart="6dp"
+                    android:text="Cancel"
+                    android:textSize="11sp"
+                    android:backgroundTint="#2A3530"
+                    android:textColor="#859990"
                     app:cornerRadius="8dp"
                     android:insetTop="0dp"
                     android:insetBottom="0dp" />
@@ -251,7 +288,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="horizontal"
-                        android:weightSum="3">
+                        android:weightSum="4">
 
                         <!-- Metric 1: Accuracy % -->
                         <LinearLayout
@@ -267,7 +304,7 @@
                                 android:layout_height="wrap_content"
                                 tools:text="85%"
                                 android:fontFamily="monospace"
-                                android:textSize="16sp"
+                                android:textSize="15sp"
                                 android:textStyle="bold"
                                 android:textColor="#00E676" />
 
@@ -275,12 +312,39 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Accuracy"
-                                android:textSize="10sp"
+                                android:textSize="9sp"
                                 android:textColor="#859990" />
 
                         </LinearLayout>
 
-                        <!-- Metric 2: Avg Correct Time -->
+                        <!-- Metric 2: Live Average Time Per Question -->
+                        <LinearLayout
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:orientation="vertical"
+                            android:gravity="center">
+
+                            <TextView
+                                android:id="@+id/tv_metric_avg_pace"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                tools:text="15s"
+                                android:fontFamily="monospace"
+                                android:textSize="15sp"
+                                android:textStyle="bold"
+                                android:textColor="#00E676" />
+
+                            <TextView
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:text="Avg / Q"
+                                android:textSize="9sp"
+                                android:textColor="#859990" />
+
+                        </LinearLayout>
+
+                        <!-- Metric 3: Avg Correct Time -->
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -294,7 +358,7 @@
                                 android:layout_height="wrap_content"
                                 tools:text="18.2s"
                                 android:fontFamily="monospace"
-                                android:textSize="16sp"
+                                android:textSize="15sp"
                                 android:textStyle="bold"
                                 android:textColor="#81C784" />
 
@@ -302,12 +366,12 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Avg Correct"
-                                android:textSize="10sp"
+                                android:textSize="9sp"
                                 android:textColor="#859990" />
 
                         </LinearLayout>
 
-                        <!-- Metric 3: Avg Incorrect Time -->
+                        <!-- Metric 4: Avg Incorrect Time -->
                         <LinearLayout
                             android:layout_width="0dp"
                             android:layout_height="wrap_content"
@@ -321,7 +385,7 @@
                                 android:layout_height="wrap_content"
                                 tools:text="36.5s"
                                 android:fontFamily="monospace"
-                                android:textSize="16sp"
+                                android:textSize="15sp"
                                 android:textStyle="bold"
                                 android:textColor="#FF5252" />
 
@@ -329,7 +393,7 @@
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:text="Avg Wrong"
-                                android:textSize="10sp"
+                                android:textSize="9sp"
                                 android:textColor="#859990" />
 
                         </LinearLayout>

@@ -115,7 +115,7 @@ class PracticeSessionManager {
     /**
      * Dynamically calculates headline accuracy, average times, and question counts.
      */
-    fun calculateMetrics(): SessionMetrics {
+    fun calculateMetrics(totalElapsedMillis: Long = 0L): SessionMetrics {
         var correctCount = 0
         var incorrectCount = 0
         var skippedCount = 0
@@ -154,8 +154,21 @@ class PracticeSessionManager {
 
         val topSinks = _responses.sortedByDescending { it.splitDurationMillis }.take(3)
 
+        val effectiveTotalElapsed = if (totalElapsedMillis > 0L) {
+            totalElapsedMillis
+        } else {
+            _responses.lastOrNull()?.cumulativeTimeMillis ?: 0L
+        }
+
+        val avgTimePerQuestion = if (_responses.isNotEmpty()) {
+            effectiveTotalElapsed / _responses.size
+        } else {
+            0L
+        }
+
         return SessionMetrics(
             accuracyPercentage = accuracy,
+            averageTimePerQuestionMillis = avgTimePerQuestion,
             averageCorrectMillis = avgCorrect,
             averageIncorrectMillis = avgIncorrect,
             totalAnswered = _responses.size - skippedCount,
@@ -163,8 +176,29 @@ class PracticeSessionManager {
             totalIncorrect = incorrectCount,
             totalSkipped = skippedCount,
             totalFlagged = flaggedCount,
-            topTimeSinks = topSinks
+            topTimeSinks = topSinks,
+            totalElapsedMillis = effectiveTotalElapsed
         )
+    }
+
+    /**
+     * Serializes recorded session laps and pace statistics into CSV format.
+     */
+    fun exportToCsv(drillTag: String, totalElapsedMillis: Long = 0L): String {
+        val metrics = calculateMetrics(totalElapsedMillis)
+        val sb = StringBuilder()
+        sb.append("question_number,selected_option,split_duration_seconds,cumulative_time_seconds,verification_status,is_flagged,average_time_per_question_seconds\n")
+        val avgSec = if (_responses.isNotEmpty()) (metrics.totalElapsedMillis / _responses.size) / 1000.0 else 0.0
+        for (r in _responses) {
+            sb.append("${r.questionNumber},${r.selectedOption.label},${r.splitDurationMillis / 1000.0},${r.cumulativeTimeMillis / 1000.0},${r.verificationStatus.name},${r.isFlagged},${String.format(java.util.Locale.US, "%.1f", avgSec)}\n")
+        }
+        sb.append("\n# SUMMARY\n")
+        sb.append("# drill_tag,${drillTag}\n")
+        sb.append("# total_questions,${_responses.size}\n")
+        sb.append("# total_time_seconds,${metrics.totalElapsedMillis / 1000.0}\n")
+        sb.append("# average_time_per_question_seconds,${String.format(java.util.Locale.US, "%.1f", avgSec)}\n")
+        sb.append("# accuracy_percentage,${metrics.accuracyPercentage}%\n")
+        return sb.toString()
     }
 
     /**
