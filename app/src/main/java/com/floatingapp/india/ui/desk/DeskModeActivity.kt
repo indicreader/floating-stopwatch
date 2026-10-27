@@ -86,8 +86,10 @@ class DeskModeActivity : AppCompatActivity(), FloatingStopwatchService.TimerList
         // Ensure floating overlay is completely hidden while Desk Mode is foreground
         enforceOverlayHidden()
 
-        // Connect to active FloatingStopwatchService
-        val serviceIntent = Intent(this, FloatingStopwatchService::class.java)
+        // Connect to active FloatingStopwatchService with ACTION_HIDE_OVERLAY
+        val serviceIntent = Intent(this, FloatingStopwatchService::class.java).apply {
+            action = FloatingStopwatchService.ACTION_HIDE_OVERLAY
+        }
         startService(serviceIntent)
         bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
     }
@@ -153,7 +155,7 @@ class DeskModeActivity : AppCompatActivity(), FloatingStopwatchService.TimerList
         }
 
         binding.btnDeskReturnOverlay.setOnClickListener {
-            returnToOverlay()
+            exitDeskMode()
         }
     }
 
@@ -163,18 +165,21 @@ class DeskModeActivity : AppCompatActivity(), FloatingStopwatchService.TimerList
                 if (binding.layoutLapsDrawer.visibility == View.VISIBLE) {
                     binding.layoutLapsDrawer.visibility = View.GONE
                 } else {
-                    returnToOverlay()
+                    exitDeskMode()
                 }
             }
         })
     }
 
-    private fun returnToOverlay() {
-        FloatingStopwatchService.activeService?.showOverlay()
-        val showIntent = Intent(this, FloatingStopwatchService::class.java).apply {
-            action = FloatingStopwatchService.ACTION_SHOW_OVERLAY
+    private fun exitDeskMode() {
+        // Exiting Desk Mode must NOT activate or show the floating overlay
+        val isTimerRunning = service?.isRunningState() == true
+        if (!isTimerRunning) {
+            val stopIntent = Intent(this, FloatingStopwatchService::class.java)
+            stopService(stopIntent)
+        } else {
+            FloatingStopwatchService.activeService?.hideOverlay()
         }
-        startService(showIntent)
         finish()
     }
 

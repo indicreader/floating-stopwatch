@@ -214,6 +214,9 @@ class FloatingStopwatchService : Service() {
         }
         prefs.edit().putString("pref_last_clock_mode", modeKey).apply()
 
+        // Standard launch without ACTION_HIDE_OVERLAY displays the overlay
+        showOverlay()
+
         return START_STICKY
     }
 
@@ -306,6 +309,7 @@ class FloatingStopwatchService : Service() {
         scaleTypography(savedWidth)
 
         try {
+            binding.root.visibility = View.GONE
             windowManager.addView(binding.root, layoutParams)
         } catch (_: Exception) {}
         applyModeConfiguration()
