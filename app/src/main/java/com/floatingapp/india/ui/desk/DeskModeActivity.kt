@@ -16,6 +16,8 @@ import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.floatingapp.india.databinding.ActivityDeskModeBinding
 import com.floatingapp.india.model.OptionChoice
@@ -38,6 +40,7 @@ class DeskModeActivity : AppCompatActivity(), FloatingStopwatchService.TimerList
             val localBinder = binder as? FloatingStopwatchService.LocalBinder
             service = localBinder?.getService() ?: FloatingStopwatchService.activeService
             isBound = true
+            service?.hideOverlay()
             service?.addTimerListener(this@DeskModeActivity)
             updateInitialUI()
         }
@@ -57,6 +60,22 @@ class DeskModeActivity : AppCompatActivity(), FloatingStopwatchService.TimerList
         binding = ActivityDeskModeBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
+        // Handle edge-to-edge Window Insets so top bar is safely below punch hole & status bar,
+        // and bottom controls are safely above the navigation bar
+        ViewCompat.setOnApplyWindowInsetsListener(binding.layoutDeskRoot) { v, insets ->
+            val systemBars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            val density = resources.displayMetrics.density
+            v.setPadding(
+                systemBars.left + (16 * density).toInt(),
+                systemBars.top + (8 * density).toInt(),
+                systemBars.right + (16 * density).toInt(),
+                systemBars.bottom + (10 * density).toInt()
+            )
+            insets
+        }
+
         setupRecyclerView()
         setupButtons()
         setupBackHandler()
@@ -64,10 +83,26 @@ class DeskModeActivity : AppCompatActivity(), FloatingStopwatchService.TimerList
         // Apply orientation specific adjustments
         applyOrientationLayout(resources.configuration.orientation)
 
+        // Ensure floating overlay is completely hidden while Desk Mode is foreground
+        enforceOverlayHidden()
+
         // Connect to active FloatingStopwatchService
         val serviceIntent = Intent(this, FloatingStopwatchService::class.java)
         startService(serviceIntent)
         bindService(serviceIntent, serviceConnection, Context.BIND_AUTO_CREATE)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        enforceOverlayHidden()
+    }
+
+    private fun enforceOverlayHidden() {
+        FloatingStopwatchService.activeService?.hideOverlay()
+        val hideIntent = Intent(this, FloatingStopwatchService::class.java).apply {
+            action = FloatingStopwatchService.ACTION_HIDE_OVERLAY
+        }
+        startService(hideIntent)
     }
 
     private fun setupRecyclerView() {
@@ -135,7 +170,11 @@ class DeskModeActivity : AppCompatActivity(), FloatingStopwatchService.TimerList
     }
 
     private fun returnToOverlay() {
-        service?.restoreOverlay()
+        FloatingStopwatchService.activeService?.showOverlay()
+        val showIntent = Intent(this, FloatingStopwatchService::class.java).apply {
+            action = FloatingStopwatchService.ACTION_SHOW_OVERLAY
+        }
+        startService(showIntent)
         finish()
     }
 
@@ -200,7 +239,7 @@ class DeskModeActivity : AppCompatActivity(), FloatingStopwatchService.TimerList
             binding.layoutOptionsContainer.orientation = LinearLayout.VERTICAL
             binding.tvDeskTimer.textSize = 54f
 
-            val buttonParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (62 * density).toInt()).apply {
+            val buttonParams = LinearLayout.LayoutParams(ViewGroup.LayoutParams.MATCH_PARENT, (58 * density).toInt()).apply {
                 val vMargin = (4 * density).toInt()
                 setMargins(0, vMargin, 0, vMargin)
             }

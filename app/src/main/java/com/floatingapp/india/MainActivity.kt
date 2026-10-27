@@ -268,10 +268,10 @@ class MainActivity : AppCompatActivity() {
             }
         }
         val serviceIntent = Intent(this, FloatingStopwatchService::class.java).apply {
+            action = FloatingStopwatchService.ACTION_HIDE_OVERLAY
             putExtra(FloatingStopwatchService.EXTRA_MODE, mode)
         }
         ContextCompat.startForegroundService(this, serviceIntent)
-        FloatingStopwatchService.activeService?.minimizeOverlay()
 
         val deskIntent = Intent(this, com.floatingapp.india.ui.desk.DeskModeActivity::class.java)
         startActivity(deskIntent)

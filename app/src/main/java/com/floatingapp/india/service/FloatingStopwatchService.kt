@@ -69,6 +69,8 @@ class FloatingStopwatchService : Service() {
         const val MODE_COUNTDOWN = "mode_countdown"
         const val MODE_SIMPLE = "mode_simple"
         const val MODE_WALL_CLOCK = "mode_wall_clock"
+        const val ACTION_HIDE_OVERLAY = "com.floatingapp.india.ACTION_HIDE_OVERLAY"
+        const val ACTION_SHOW_OVERLAY = "com.floatingapp.india.ACTION_SHOW_OVERLAY"
 
         @Volatile
         var activeService: FloatingStopwatchService? = null
@@ -188,6 +190,15 @@ class FloatingStopwatchService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent?.action == ACTION_HIDE_OVERLAY) {
+            hideOverlay()
+            return START_STICKY
+        }
+        if (intent?.action == ACTION_SHOW_OVERLAY) {
+            showOverlay()
+            return START_STICKY
+        }
+
         val modeKey = intent?.getStringExtra(EXTRA_MODE)
             ?: prefs.getString("pref_last_clock_mode", MODE_STOPWATCH)
             ?: MODE_STOPWATCH
@@ -574,7 +585,7 @@ class FloatingStopwatchService : Service() {
         }
 
         binding.btnExpandDeskMode.setOnClickListener {
-            minimizeOverlay()
+            hideOverlay()
             val intent = Intent().setClassName(this, "com.floatingapp.india.ui.desk.DeskModeActivity").apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
             }
@@ -1295,6 +1306,19 @@ class FloatingStopwatchService : Service() {
 
     fun removeTimerListener(listener: TimerListener) {
         timerListeners.remove(listener)
+    }
+
+    fun hideOverlay() {
+        if (::binding.isInitialized) {
+            binding.root.visibility = View.GONE
+        }
+    }
+
+    fun showOverlay() {
+        if (::binding.isInitialized) {
+            binding.root.visibility = View.VISIBLE
+            restoreOverlay()
+        }
     }
 
     fun minimizeOverlay() {

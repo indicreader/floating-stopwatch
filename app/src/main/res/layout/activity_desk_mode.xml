@@ -13,14 +13,14 @@
         android:layout_height="match_parent"
         android:orientation="vertical"
         android:paddingHorizontal="16dp"
-        android:paddingTop="12dp"
-        android:paddingBottom="16dp">
+        android:paddingTop="8dp"
+        android:paddingBottom="12dp">
 
         <!-- 1. Top Glanceable Status Bar -->
         <RelativeLayout
             android:id="@+id/layout_desk_top_bar"
             android:layout_width="match_parent"
-            android:layout_height="48dp"
+            android:layout_height="52dp"
             android:gravity="center_vertical">
 
             <LinearLayout
@@ -31,38 +31,72 @@
                 android:orientation="horizontal"
                 android:gravity="center_vertical">
 
-                <TextView
-                    android:id="@+id/tv_desk_mode_title"
-                    android:layout_width="wrap_content"
-                    android:layout_height="wrap_content"
-                    android:text="STOPWATCH"
-                    android:letterSpacing="0.15"
-                    android:textSize="13sp"
+                <!-- Prominent Close / Return to Overlay Button -->
+                <com.google.android.material.button.MaterialButton
+                    android:id="@+id/btn_desk_return_overlay"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:padding="0dp"
+                    android:insetTop="0dp"
+                    android:insetBottom="0dp"
+                    android:insetLeft="0dp"
+                    android:insetRight="0dp"
+                    android:text="✕"
+                    android:textSize="18sp"
                     android:textStyle="bold"
-                    android:textColor="#859990" />
+                    android:textColor="#E6ECE9"
+                    app:backgroundTint="#24342C"
+                    app:cornerRadius="22dp"
+                    app:strokeColor="#3A5245"
+                    app:strokeWidth="1dp"
+                    android:contentDescription="Return to Floating Overlay" />
 
-                <TextView
-                    android:id="@+id/btn_desk_drill_tag"
+                <!-- Mode & Drill Tag Container -->
+                <LinearLayout
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
-                    android:paddingHorizontal="8dp"
-                    android:paddingVertical="3dp"
-                    android:background="@drawable/badge_question_number"
-                    android:text="Type - 1"
-                    android:fontFamily="monospace"
-                    android:textSize="12sp"
-                    android:textStyle="bold"
-                    android:textColor="#FFFFFF" />
+                    android:layout_marginStart="10dp"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tv_desk_mode_title"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:text="STOPWATCH"
+                        android:letterSpacing="0.15"
+                        android:textSize="11sp"
+                        android:textStyle="bold"
+                        android:textColor="#00E676" />
+
+                    <TextView
+                        android:id="@+id/btn_desk_drill_tag"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="1dp"
+                        android:text="Type - 1"
+                        android:fontFamily="monospace"
+                        android:textSize="12sp"
+                        android:textStyle="bold"
+                        android:textColor="#FFFFFF" />
+                </LinearLayout>
+
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_alignParentEnd="true"
+                android:layout_centerVertical="true"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
 
                 <!-- Active Question Pill -->
                 <TextView
                     android:id="@+id/tv_desk_question_badge"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
                     android:paddingHorizontal="10dp"
-                    android:paddingVertical="3dp"
+                    android:paddingVertical="4dp"
                     android:background="@drawable/bg_badge_option"
                     android:text="Q: 1"
                     android:textSize="13sp"
@@ -74,81 +108,73 @@
                     android:id="@+id/tv_desk_avg_badge"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:layout_marginStart="8dp"
+                    android:layout_marginStart="6dp"
                     android:paddingHorizontal="10dp"
-                    android:paddingVertical="3dp"
+                    android:paddingVertical="4dp"
                     android:background="@drawable/bg_badge_skip"
                     android:text="Avg: --"
                     android:textSize="13sp"
                     android:textStyle="bold"
                     android:textColor="#FFAB00" />
-            </LinearLayout>
-
-            <LinearLayout
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_alignParentEnd="true"
-                android:layout_centerVertical="true"
-                android:orientation="horizontal"
-                android:gravity="center_vertical">
 
                 <!-- View Splits Button -->
                 <ImageButton
                     android:id="@+id/btn_desk_splits"
-                    android:layout_width="38dp"
-                    android:layout_height="38dp"
-                    android:padding="7dp"
+                    android:layout_width="44dp"
+                    android:layout_height="44dp"
+                    android:layout_marginStart="6dp"
+                    android:padding="10dp"
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@drawable/ic_format_list_bulleted"
                     android:contentDescription="View Splits History"
                     app:tint="#859990" />
-
-                <!-- Dock / Return to Floating Overlay -->
-                <ImageButton
-                    android:id="@+id/btn_desk_return_overlay"
-                    android:layout_width="38dp"
-                    android:layout_height="38dp"
-                    android:layout_marginStart="4dp"
-                    android:padding="7dp"
-                    android:background="?attr/selectableItemBackgroundBorderless"
-                    android:src="@drawable/ic_close"
-                    android:contentDescription="Return to Floating Overlay"
-                    app:tint="#859990" />
             </LinearLayout>
         </RelativeLayout>
 
-        <!-- 2. Glanceable Timer Display Section -->
-        <LinearLayout
-            android:id="@+id/layout_desk_timer_card"
+        <!-- 2. Glanceable Hero Timer Card -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/card_desk_timer"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="center"
-            android:paddingVertical="8dp">
+            android:layout_marginVertical="6dp"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:strokeWidth="1.5dp"
+            app:strokeColor="#24342C"
+            app:cardBackgroundColor="#15211B">
 
-            <TextView
-                android:id="@+id/tv_desk_timer"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="00:00:00.0"
-                android:fontFamily="monospace"
-                android:textSize="54sp"
-                android:textStyle="bold"
-                android:textColor="#E6ECE9"
-                android:letterSpacing="0.02"
-                android:includeFontPadding="false" />
+                android:orientation="vertical"
+                android:gravity="center"
+                android:paddingVertical="14dp"
+                android:paddingHorizontal="16dp">
 
-            <TextView
-                android:id="@+id/tv_desk_split"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="2dp"
-                android:text="Active Q01 • Split: 00:00.0"
-                android:fontFamily="monospace"
-                android:textSize="16sp"
-                android:textStyle="bold"
-                android:textColor="#859990" />
-        </LinearLayout>
+                <TextView
+                    android:id="@+id/tv_desk_timer"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="00:00:00.0"
+                    android:fontFamily="monospace"
+                    android:textSize="54sp"
+                    android:textStyle="bold"
+                    android:textColor="#E6ECE9"
+                    android:letterSpacing="0.02"
+                    android:includeFontPadding="false" />
+
+                <TextView
+                    android:id="@+id/tv_desk_split"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="4dp"
+                    android:text="Active Q01 • Split: 00:00.0"
+                    android:fontFamily="monospace"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textColor="#859990" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <!-- 3. Oversized A/B/C/D Option Pad -->
         <LinearLayout
@@ -158,12 +184,12 @@
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:layout_marginVertical="6dp">
+            android:layout_marginVertical="4dp">
 
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_option_a"
                 android:layout_width="match_parent"
-                android:layout_height="62dp"
+                android:layout_height="58dp"
                 android:layout_marginVertical="4dp"
                 android:text="A"
                 android:textSize="26sp"
@@ -177,7 +203,7 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_option_b"
                 android:layout_width="match_parent"
-                android:layout_height="62dp"
+                android:layout_height="58dp"
                 android:layout_marginVertical="4dp"
                 android:text="B"
                 android:textSize="26sp"
@@ -191,7 +217,7 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_option_c"
                 android:layout_width="match_parent"
-                android:layout_height="62dp"
+                android:layout_height="58dp"
                 android:layout_marginVertical="4dp"
                 android:text="C"
                 android:textSize="26sp"
@@ -205,7 +231,7 @@
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_option_d"
                 android:layout_width="match_parent"
-                android:layout_height="62dp"
+                android:layout_height="58dp"
                 android:layout_marginVertical="4dp"
                 android:text="D"
                 android:textSize="26sp"
@@ -221,7 +247,7 @@
         <LinearLayout
             android:id="@+id/layout_desk_bottom_bar"
             android:layout_width="match_parent"
-            android:layout_height="56dp"
+            android:layout_height="52dp"
             android:orientation="horizontal"
             android:gravity="center_vertical"
             android:layout_marginTop="4dp">
@@ -234,7 +260,7 @@
                 android:layout_weight="1"
                 android:layout_marginEnd="6dp"
                 android:text="★ Review"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textStyle="bold"
                 android:textColor="#D1C4E9"
                 app:backgroundTint="#311B92"
@@ -266,7 +292,7 @@
                 android:layout_weight="1"
                 android:layout_marginEnd="6dp"
                 android:text="⏸ Pause"
-                android:textSize="14sp"
+                android:textSize="13sp"
                 android:textStyle="bold"
                 android:textColor="#FFFFFF"
                 app:backgroundTint="#263238"
@@ -277,7 +303,7 @@
             <!-- Reset Button -->
             <com.google.android.material.button.MaterialButton
                 android:id="@+id/btn_desk_reset"
-                android:layout_width="52dp"
+                android:layout_width="50dp"
                 android:layout_height="match_parent"
                 android:text="↺"
                 android:textSize="18sp"
