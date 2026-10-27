@@ -22,6 +22,7 @@
 | **FEAT-08** | In-App GitHub Self-Updater | Settings / Network | P1 | 📐 [READY] |
 | **FEAT-09** | Auto-Resume & Question Offset Prefetching | Session / Storage | P0 | ✅ [COMPLETED] |
 | **FEAT-10** | Overlay UI Polish — Relocate Avg Badge & Remove Target | Overlay / UI | P0 | ✅ [COMPLETED] |
+| **FIX-02** | Fix Overlay Launch Touch Lag & Dropped Pointer Events | Overlay / Window | P0 | ✅ [COMPLETED] |
 
 ---
 
@@ -34,6 +35,7 @@
 | **FIX-01** | Isolated Overlay Drag Handle | 2026-10 | Drag handler strictly attached to header handle; touch inputs and edit fields must never drag window. |
 | **FEAT-09** | Auto-Resume & Question Offset Prefetching | 2026-10 | Automatically prefetch starting question offset across Stopwatch and Countdown drills; uncompleted/cancelled sessions (0 questions) must never corrupt or increment offset. |
 | **FEAT-10** | Overlay UI Polish — Relocate Avg Badge & Remove Target | 2026-10 | Sub-header displays strictly Active QXX and split time; Avg badge remains in 5th column slot with disabled touch input. |
+| **FIX-02** | Fix Overlay Launch Touch Lag & Dropped Pointer Events | 2026-10 | Overlay WindowManager LayoutParams must maintain FLAG_NOT_FOCUSABLE or FLAG_LAYOUT_IN_SCREEN or FLAG_LAYOUT_NO_LIMITS or FLAG_HARDWARE_ACCELERATED to prevent surface input stalls. |
 
 
 
@@ -71,4 +73,6 @@
 - Styled as a rounded pill/card matching the height (44dp) of option buttons with neutral background/border (`#2A2A2A` / `#2E3D37`) and non-actionable passive touch behavior.
 - Real-time updates: dynamic pace calculation updates this badge in place on every question advance across Stopwatch and Countdown modes.
 
-
+### FIX-02: Fix Overlay Launch Touch Lag & Dropped Pointer Events
+- Update `WindowManager.LayoutParams` flags to incorporate `FLAG_LAYOUT_IN_SCREEN`, `FLAG_LAYOUT_NO_LIMITS`, and `FLAG_HARDWARE_ACCELERATED` alongside `FLAG_NOT_FOCUSABLE`.
+- Ensures immediate hardware-accelerated surface rendering and instant pointer event routing to the overlay window upon launch, eliminating initial dropped taps on buttons and the drag handle.
