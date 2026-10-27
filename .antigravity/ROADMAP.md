@@ -36,7 +36,7 @@
 | **FIX-01** | Isolated Overlay Drag Handle | 2026-10 | Drag handler strictly attached to header handle; touch inputs and edit fields must never drag window. |
 | **FEAT-09** | Auto-Resume & Question Offset Prefetching | 2026-10 | Automatically prefetch starting question offset across Stopwatch and Countdown drills; uncompleted/cancelled sessions (0 questions) must never corrupt or increment offset. |
 | **FEAT-10** | Overlay UI Polish — Relocate Avg Badge & Remove Target | 2026-10 | Sub-header displays strictly Active QXX and split time; Avg badge remains in 5th column slot with disabled touch input. |
-| **FIX-02** | Fix Overlay Launch Touch Lag & Dropped Pointer Events | 2026-10 | Overlay WindowManager LayoutParams must maintain FLAG_NOT_FOCUSABLE or FLAG_LAYOUT_IN_SCREEN or FLAG_LAYOUT_NO_LIMITS or FLAG_HARDWARE_ACCELERATED to prevent surface input stalls. |
+| **FIX-02** | Fix Overlay Launch Touch Lag & Dropped Pointer Events | 2026-10 | Overlay WindowManager LayoutParams must use FLAG_NOT_FOCUSABLE or FLAG_NOT_TOUCH_MODAL or FLAG_HARDWARE_ACCELERATED (without FLAG_LAYOUT_NO_LIMITS) to ensure pixel-perfect touch coordinate dispatch and zero missed button touches. |
 | **FEAT-11** | Full-Screen Desk Mode for Physical Books & Hardcopy Drills | 2026-10 | DeskModeActivity and Floating overlay share single background service/engine; mode switching must minimize/restore overlay seamlessly without interrupting running timer. |
 
 

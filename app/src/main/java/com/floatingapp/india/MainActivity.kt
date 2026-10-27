@@ -13,6 +13,8 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
+import androidx.core.view.ViewCompat
+import androidx.core.view.WindowInsetsCompat
 import android.app.AlertDialog
 import android.view.ViewGroup
 import android.widget.AdapterView
@@ -46,6 +48,16 @@ class MainActivity : AppCompatActivity() {
         drillTagRepo = DrillTagRepository(this)
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
+
+        // Handle edge-to-edge system window insets & display cutouts so top bar & settings button
+        // are safely below the camera cutout/punch-hole, and bottom cards are above navigation bar
+        ViewCompat.setOnApplyWindowInsetsListener(binding.root) { _, insets ->
+            val bars = insets.getInsets(
+                WindowInsetsCompat.Type.systemBars() or WindowInsetsCompat.Type.displayCutout()
+            )
+            binding.root.setPadding(bars.left, bars.top, bars.right, bars.bottom)
+            insets
+        }
 
         binding.btnTopSettings.setOnClickListener {
             startActivity(Intent(this, SettingsActivity::class.java))

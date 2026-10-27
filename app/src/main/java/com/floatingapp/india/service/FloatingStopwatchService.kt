@@ -285,16 +285,15 @@ class FloatingStopwatchService : Service() {
             WindowManager.LayoutParams.WRAP_CONTENT,
             layoutType,
             WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE or
-                WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN or
-                WindowManager.LayoutParams.FLAG_LAYOUT_NO_LIMITS or
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL or
                 WindowManager.LayoutParams.FLAG_HARDWARE_ACCELERATED or
                 screenOnFlag or
                 lockScreenFlag,
             PixelFormat.TRANSLUCENT
         ).apply {
             gravity = Gravity.TOP or Gravity.START
-            x = 80
-            y = 160
+            x = prefs.getInt("pref_overlay_x", 80)
+            y = prefs.getInt("pref_overlay_y", 160)
         }
 
         setupResizeListener()
@@ -338,20 +337,26 @@ class FloatingStopwatchService : Service() {
                     binding.btnCountdownPresetChip,
                     binding.btnFloatingDrillTag
                 )
-                val hitRect = Rect()
+                val loc = IntArray(2)
+                val rawX = event.rawX.toInt()
+                val rawY = event.rawY.toInt()
                 for (child in interactiveViews) {
                     if (child.visibility == View.VISIBLE) {
-                        child.getHitRect(hitRect)
-                        if (hitRect.contains(event.x.toInt(), event.y.toInt())) {
+                        child.getLocationOnScreen(loc)
+                        val childRect = Rect(loc[0], loc[1], loc[0] + child.width, loc[1] + child.height)
+                        if (childRect.contains(rawX, rawY)) {
                             return@OnTouchListener false
                         }
                     }
                 }
             } else if (view == binding.layoutMinimizedOverlay) {
-                val hitRect = Rect()
+                val loc = IntArray(2)
+                val rawX = event.rawX.toInt()
+                val rawY = event.rawY.toInt()
                 if (binding.btnMinimizedRestore.visibility == View.VISIBLE) {
-                    binding.btnMinimizedRestore.getHitRect(hitRect)
-                    if (hitRect.contains(event.x.toInt(), event.y.toInt())) {
+                    binding.btnMinimizedRestore.getLocationOnScreen(loc)
+                    val restoreRect = Rect(loc[0], loc[1], loc[0] + binding.btnMinimizedRestore.width, loc[1] + binding.btnMinimizedRestore.height)
+                    if (restoreRect.contains(rawX, rawY)) {
                         return@OnTouchListener false
                     }
                 }
@@ -805,8 +810,16 @@ class FloatingStopwatchService : Service() {
     // ==========================================
 
     private fun onOptionTapped(option: OptionChoice) {
-        if (!isRunning) return
         if (currentMode != ClockMode.STOPWATCH && currentMode != ClockMode.COUNTDOWN) return
+
+        // Auto-start timer if currently idle/paused so every tap produces an immediate response
+        if (!isRunning) {
+            if (currentMode == ClockMode.STOPWATCH) {
+                startStopwatch()
+            } else if (currentMode == ClockMode.COUNTDOWN) {
+                startCountdown()
+            }
+        }
 
         triggerHapticFeedback()
 
