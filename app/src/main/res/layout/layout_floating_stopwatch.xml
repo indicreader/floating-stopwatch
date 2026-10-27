@@ -102,6 +102,17 @@
                     android:orientation="horizontal"
                     android:gravity="center_vertical">
 
+                    <!-- Expand to Desk Mode Button -->
+                    <ImageButton
+                        android:id="@+id/btn_expand_desk_mode"
+                        android:layout_width="28dp"
+                        android:layout_height="28dp"
+                        android:padding="5dp"
+                        android:background="?attr/selectableItemBackgroundBorderless"
+                        android:src="@drawable/ic_fullscreen"
+                        android:contentDescription="Expand to Desk Mode"
+                        app:tint="#859990" />
+
                     <!-- Settings Button (opens preferences from overlay) -->
                     <ImageButton
                         android:id="@+id/btn_floating_settings"
@@ -652,6 +663,7 @@
 
         <!-- Bottom Resize Grip Bar -->
         <RelativeLayout
+            android:id="@+id/layout_bottom_resize_bar"
             android:layout_width="match_parent"
             android:layout_height="22dp"
             android:paddingEnd="6dp"
@@ -669,6 +681,46 @@
                 app:tint="#859990" />
 
         </RelativeLayout>
+
+        <!-- Minimized Floating Pill View (Active during Desk Mode) -->
+        <LinearLayout
+            android:id="@+id/layout_minimized_overlay"
+            android:layout_width="wrap_content"
+            android:layout_height="38dp"
+            android:orientation="horizontal"
+            android:gravity="center_vertical"
+            android:paddingHorizontal="10dp"
+            android:visibility="gone">
+
+            <ImageView
+                android:id="@+id/iv_minimized_drag_handle"
+                android:layout_width="20dp"
+                android:layout_height="20dp"
+                android:src="@drawable/ic_drag_handle"
+                android:contentDescription="Drag"
+                app:tint="#859990" />
+
+            <TextView
+                android:id="@+id/tv_minimized_timer"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="8dp"
+                android:text="00:00.0"
+                android:fontFamily="monospace"
+                android:textSize="12sp"
+                android:textStyle="bold"
+                android:textColor="#FFFFFF" />
+
+            <ImageButton
+                android:id="@+id/btn_minimized_restore"
+                android:layout_width="24dp"
+                android:layout_height="24dp"
+                android:layout_marginStart="8dp"
+                android:background="?attr/selectableItemBackgroundBorderless"
+                android:src="@drawable/ic_fullscreen"
+                android:contentDescription="Restore overlay"
+                app:tint="#4CAF50" />
+        </LinearLayout>
 
     </LinearLayout>
 

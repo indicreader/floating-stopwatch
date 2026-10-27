@@ -78,9 +78,17 @@ class MainActivity : AppCompatActivity() {
             checkPermissionsAndLaunch()
         }
 
+        binding.btnLaunchDeskStopwatch.setOnClickListener {
+            launchDeskMode(FloatingStopwatchService.MODE_STOPWATCH)
+        }
+
         binding.btnLaunchCountdown.setOnClickListener {
             selectMode(FloatingStopwatchService.MODE_COUNTDOWN)
             checkPermissionsAndLaunch()
+        }
+
+        binding.btnLaunchDeskCountdown.setOnClickListener {
+            launchDeskMode(FloatingStopwatchService.MODE_COUNTDOWN)
         }
 
         updateCardSelectionUI()
@@ -249,6 +257,24 @@ class MainActivity : AppCompatActivity() {
 
         val modeLabel = if (selectedMode == FloatingStopwatchService.MODE_COUNTDOWN) "Countdown Timer" else "Practice Stopwatch"
         Toast.makeText(this, "$modeLabel Launched", Toast.LENGTH_SHORT).show()
+    }
+
+    private fun launchDeskMode(mode: String) {
+        selectMode(mode)
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                return
+            }
+        }
+        val serviceIntent = Intent(this, FloatingStopwatchService::class.java).apply {
+            putExtra(FloatingStopwatchService.EXTRA_MODE, mode)
+        }
+        ContextCompat.startForegroundService(this, serviceIntent)
+        FloatingStopwatchService.activeService?.minimizeOverlay()
+
+        val deskIntent = Intent(this, com.floatingapp.india.ui.desk.DeskModeActivity::class.java)
+        startActivity(deskIntent)
     }
 
     private fun requestOverlayPermission() {

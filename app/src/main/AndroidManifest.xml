@@ -37,6 +37,12 @@
             android:parentActivityName=".MainActivity"
             android:theme="@style/Theme.PracticeTimer.M3" />
 
+        <activity
+            android:name=".ui.desk.DeskModeActivity"
+            android:exported="false"
+            android:configChanges="orientation|screenSize|screenLayout|smallestScreenSize"
+            android:theme="@style/Theme.PracticeTimer.M3" />
+
         <service
             android:name=".service.FloatingStopwatchService"
             android:exported="false"

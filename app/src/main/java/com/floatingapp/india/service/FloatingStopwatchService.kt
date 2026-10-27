@@ -14,6 +14,7 @@ import android.content.pm.ServiceInfo
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.PixelFormat
+import android.os.Binder
 import android.os.Build
 import android.os.Handler
 import android.os.IBinder
@@ -68,7 +69,26 @@ class FloatingStopwatchService : Service() {
         const val MODE_COUNTDOWN = "mode_countdown"
         const val MODE_SIMPLE = "mode_simple"
         const val MODE_WALL_CLOCK = "mode_wall_clock"
+
+        @Volatile
+        var activeService: FloatingStopwatchService? = null
+            private set
     }
+
+    interface TimerListener {
+        fun onTick(totalElapsedMillis: Long, splitElapsedMillis: Long, mode: ClockMode, isRunning: Boolean)
+        fun onStateChanged(isRunning: Boolean)
+        fun onResponseLogged()
+        fun onReset()
+    }
+
+    inner class LocalBinder : Binder() {
+        fun getService(): FloatingStopwatchService = this@FloatingStopwatchService
+    }
+
+    private val localBinder = LocalBinder()
+    private val timerListeners = java.util.concurrent.CopyOnWriteArraySet<TimerListener>()
+    private var isOverlayMinimized = false
 
     enum class ClockMode {
         STOPWATCH,
@@ -152,10 +172,11 @@ class FloatingStopwatchService : Service() {
         }
     }
 
-    override fun onBind(intent: Intent?): IBinder? = null
+    override fun onBind(intent: Intent?): IBinder = localBinder
 
     override fun onCreate() {
         super.onCreate()
+        activeService = this
         prefs = PreferenceManager.getDefaultSharedPreferences(this)
         drillTagRepo = DrillTagRepository(this)
         windowManager = getSystemService(WINDOW_SERVICE) as WindowManager
@@ -300,6 +321,7 @@ class FloatingStopwatchService : Service() {
             // If touching the header bar, ensure touches on interactive child buttons are not intercepted
             if (view == binding.layoutDragHeader) {
                 val interactiveViews = listOf(
+                    binding.btnExpandDeskMode,
                     binding.btnFloatingSettings,
                     binding.btnClose,
                     binding.btnCountdownPresetChip,
@@ -312,6 +334,14 @@ class FloatingStopwatchService : Service() {
                         if (hitRect.contains(event.x.toInt(), event.y.toInt())) {
                             return@OnTouchListener false
                         }
+                    }
+                }
+            } else if (view == binding.layoutMinimizedOverlay) {
+                val hitRect = Rect()
+                if (binding.btnMinimizedRestore.visibility == View.VISIBLE) {
+                    binding.btnMinimizedRestore.getHitRect(hitRect)
+                    if (hitRect.contains(event.x.toInt(), event.y.toInt())) {
+                        return@OnTouchListener false
                     }
                 }
             }
@@ -358,6 +388,9 @@ class FloatingStopwatchService : Service() {
         binding.layoutDragHeader.setOnTouchListener(touchListener)
         binding.ivDragHandle.setOnTouchListener(touchListener)
         binding.tvWindowTitle.setOnTouchListener(touchListener)
+        binding.layoutMinimizedOverlay.setOnTouchListener(touchListener)
+        binding.ivMinimizedDragHandle.setOnTouchListener(touchListener)
+        binding.tvMinimizedTimer.setOnTouchListener(touchListener)
     }
 
     /**
@@ -538,6 +571,20 @@ class FloatingStopwatchService : Service() {
                 flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
             }
             startActivity(intent)
+        }
+
+        binding.btnExpandDeskMode.setOnClickListener {
+            minimizeOverlay()
+            val intent = Intent().setClassName(this, "com.floatingapp.india.ui.desk.DeskModeActivity").apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_SINGLE_TOP)
+            }
+            try {
+                startActivity(intent)
+            } catch (_: Exception) {}
+        }
+
+        binding.btnMinimizedRestore.setOnClickListener {
+            restoreOverlay()
         }
 
         binding.btnClose.setOnClickListener {
@@ -859,10 +906,17 @@ class FloatingStopwatchService : Service() {
     private fun updateTimerDisplay() {
         val elapsed = calculateCurrentElapsedMillis()
         val showMillis = prefs.getBoolean("pref_show_milliseconds", true)
-        binding.tvTimerDisplay.text = formatFullStopwatchTime(elapsed, showMillis)
+        val timeString = formatFullStopwatchTime(elapsed, showMillis)
+        binding.tvTimerDisplay.text = timeString
+        if (isOverlayMinimized) {
+            binding.tvMinimizedTimer.text = formatFullStopwatchTime(elapsed, false)
+        }
 
         val split = elapsed - sessionManager.activeSplitBaseTimestamp
         updateActivePacingDisplay(split)
+        for (l in timerListeners) {
+            l.onTick(elapsed, split, currentMode, isRunning)
+        }
     }
 
     private fun updateActivePacingDisplay(currentSplitMillis: Long) {
@@ -1120,6 +1174,9 @@ class FloatingStopwatchService : Service() {
             isRunning = false
             persistSessionEndOffsetIfNeeded()
             binding.tvTimerDisplay.text = "00:00:00.0"
+            if (isOverlayMinimized) {
+                binding.tvMinimizedTimer.text = "00:00.0"
+            }
             binding.btnPlayPause.setImageResource(R.drawable.ic_play_arrow)
             triggerHapticFeedback()
             Toast.makeText(this, "Countdown Finished!", Toast.LENGTH_SHORT).show()
@@ -1130,11 +1187,22 @@ class FloatingStopwatchService : Service() {
             binding.layoutAccuracyBanner.visibility = View.VISIBLE
             binding.layoutLapsDrawer.visibility = View.VISIBLE
             binding.rvLaps.scrollToPosition(0)
+            for (l in timerListeners) {
+                l.onTick(countdownTotalMillis, 0L, currentMode, false)
+                l.onStateChanged(false)
+            }
         } else {
-            binding.tvTimerDisplay.text = formatCountdownTime(remaining)
+            val formatted = formatCountdownTime(remaining)
+            binding.tvTimerDisplay.text = formatted
+            if (isOverlayMinimized) {
+                binding.tvMinimizedTimer.text = formatted
+            }
             val currentElapsed = (countdownTotalMillis - remaining).coerceAtLeast(0L)
             val split = (currentElapsed - sessionManager.activeSplitBaseTimestamp).coerceAtLeast(0L)
             updateActivePacingDisplay(split)
+            for (l in timerListeners) {
+                l.onTick(currentElapsed, split, currentMode, isRunning)
+            }
         }
     }
 
@@ -1217,8 +1285,82 @@ class FloatingStopwatchService : Service() {
         }
     }
 
+    fun addTimerListener(listener: TimerListener) {
+        timerListeners.add(listener)
+        val elapsed = calculateCurrentElapsedMillis()
+        val split = elapsed - sessionManager.activeSplitBaseTimestamp
+        listener.onTick(elapsed, split, currentMode, isRunning)
+        listener.onStateChanged(isRunning)
+    }
+
+    fun removeTimerListener(listener: TimerListener) {
+        timerListeners.remove(listener)
+    }
+
+    fun minimizeOverlay() {
+        if (::binding.isInitialized) {
+            isOverlayMinimized = true
+            binding.layoutContentBody.visibility = View.GONE
+            binding.layoutBottomResizeBar.visibility = View.GONE
+            binding.layoutMinimizedOverlay.visibility = View.VISIBLE
+            layoutParams.width = WindowManager.LayoutParams.WRAP_CONTENT
+            safeUpdateViewLayout()
+        }
+    }
+
+    fun restoreOverlay() {
+        if (::binding.isInitialized) {
+            isOverlayMinimized = false
+            binding.layoutContentBody.visibility = View.VISIBLE
+            binding.layoutBottomResizeBar.visibility = View.VISIBLE
+            binding.layoutMinimizedOverlay.visibility = View.GONE
+            val density = resources.displayMetrics.density
+            val defaultWidth = (340 * density).toInt()
+            val savedWidth = prefs.getInt("pref_overlay_width_px", defaultWidth)
+            layoutParams.width = savedWidth
+            safeUpdateViewLayout()
+        }
+    }
+
+    fun getSessionManager(): PracticeSessionManager = sessionManager
+    fun getDrillTagRepo(): DrillTagRepository = drillTagRepo
+    fun isRunningState(): Boolean = isRunning
+    fun getClockMode(): ClockMode = currentMode
+
+    fun triggerPlayPause() {
+        when (currentMode) {
+            ClockMode.STOPWATCH -> {
+                if (isRunning) pauseStopwatch() else startStopwatchWithPromptCheck()
+            }
+            ClockMode.COUNTDOWN -> {
+                if (isRunning) pauseCountdown() else startCountdownWithPromptCheck()
+            }
+        }
+        for (l in timerListeners) l.onStateChanged(isRunning)
+    }
+
+    fun triggerReset() {
+        when (currentMode) {
+            ClockMode.STOPWATCH -> resetStopwatch()
+            ClockMode.COUNTDOWN -> resetCountdown()
+        }
+        for (l in timerListeners) l.onReset()
+    }
+
+    fun triggerOption(option: OptionChoice) {
+        onOptionTapped(option)
+        for (l in timerListeners) l.onResponseLogged()
+    }
+
+    fun triggerFlagToggle(questionNumber: Int) {
+        sessionManager.toggleFlag(questionNumber)
+        lapAdapter.submitList(sessionManager.responses.map { it.copy() })
+        for (l in timerListeners) l.onResponseLogged()
+    }
+
     override fun onDestroy() {
         super.onDestroy()
+        if (activeService == this) activeService = null
         persistSessionEndOffsetIfNeeded()
         prefs.unregisterOnSharedPreferenceChangeListener(prefChangeListener)
         tickerHandler.removeCallbacks(tickerRunnable)

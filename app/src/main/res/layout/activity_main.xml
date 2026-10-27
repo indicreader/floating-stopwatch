@@ -359,20 +359,42 @@
 
                         </LinearLayout>
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btn_launch_overlay"
+                        <LinearLayout
                             android:layout_width="wrap_content"
-                            android:layout_height="40dp"
+                            android:layout_height="wrap_content"
                             android:layout_alignParentEnd="true"
                             android:layout_centerVertical="true"
-                            android:text="Launch ▶"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:backgroundTint="#00E676"
-                            android:textColor="#0C1D17"
-                            app:cornerRadius="10dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp" />
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btn_launch_desk_stopwatch"
+                                android:layout_width="wrap_content"
+                                android:layout_height="40dp"
+                                android:layout_marginEnd="6dp"
+                                android:text="Desk ⛶"
+                                android:textSize="11sp"
+                                android:textStyle="bold"
+                                android:backgroundTint="#1F2933"
+                                android:textColor="#00E676"
+                                app:strokeColor="#00E676"
+                                app:strokeWidth="1dp"
+                                app:cornerRadius="10dp"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btn_launch_overlay"
+                                android:layout_width="wrap_content"
+                                android:layout_height="40dp"
+                                android:text="Overlay 🗗"
+                                android:textSize="11sp"
+                                android:textStyle="bold"
+                                android:backgroundTint="#00E676"
+                                android:textColor="#0C1D17"
+                                app:cornerRadius="10dp"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp" />
+                        </LinearLayout>
 
                     </RelativeLayout>
 
@@ -486,20 +508,42 @@
 
                         </LinearLayout>
 
-                        <com.google.android.material.button.MaterialButton
-                            android:id="@+id/btn_launch_countdown"
+                        <LinearLayout
                             android:layout_width="wrap_content"
-                            android:layout_height="40dp"
+                            android:layout_height="wrap_content"
                             android:layout_alignParentEnd="true"
                             android:layout_centerVertical="true"
-                            android:text="Launch ▶"
-                            android:textSize="12sp"
-                            android:textStyle="bold"
-                            android:backgroundTint="#FFAB00"
-                            android:textColor="#17221D"
-                            app:cornerRadius="10dp"
-                            android:insetTop="0dp"
-                            android:insetBottom="0dp" />
+                            android:orientation="horizontal">
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btn_launch_desk_countdown"
+                                android:layout_width="wrap_content"
+                                android:layout_height="40dp"
+                                android:layout_marginEnd="6dp"
+                                android:text="Desk ⛶"
+                                android:textSize="11sp"
+                                android:textStyle="bold"
+                                android:backgroundTint="#1F2933"
+                                android:textColor="#FFAB00"
+                                app:strokeColor="#FFAB00"
+                                app:strokeWidth="1dp"
+                                app:cornerRadius="10dp"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp" />
+
+                            <com.google.android.material.button.MaterialButton
+                                android:id="@+id/btn_launch_countdown"
+                                android:layout_width="wrap_content"
+                                android:layout_height="40dp"
+                                android:text="Overlay 🗗"
+                                android:textSize="11sp"
+                                android:textStyle="bold"
+                                android:backgroundTint="#FFAB00"
+                                android:textColor="#17221D"
+                                app:cornerRadius="10dp"
+                                android:insetTop="0dp"
+                                android:insetBottom="0dp" />
+                        </LinearLayout>
 
                     </RelativeLayout>
 

@@ -23,6 +23,7 @@
 | **FEAT-09** | Auto-Resume & Question Offset Prefetching | Session / Storage | P0 | ✅ [COMPLETED] |
 | **FEAT-10** | Overlay UI Polish — Relocate Avg Badge & Remove Target | Overlay / UI | P0 | ✅ [COMPLETED] |
 | **FIX-02** | Fix Overlay Launch Touch Lag & Dropped Pointer Events | Overlay / Window | P0 | ✅ [COMPLETED] |
+| **FEAT-11** | Full-Screen Desk Mode for Physical Books & Hardcopy Drills | Full-Screen / Activity | P1 | ✅ [COMPLETED] |
 
 ---
 
@@ -36,6 +37,7 @@
 | **FEAT-09** | Auto-Resume & Question Offset Prefetching | 2026-10 | Automatically prefetch starting question offset across Stopwatch and Countdown drills; uncompleted/cancelled sessions (0 questions) must never corrupt or increment offset. |
 | **FEAT-10** | Overlay UI Polish — Relocate Avg Badge & Remove Target | 2026-10 | Sub-header displays strictly Active QXX and split time; Avg badge remains in 5th column slot with disabled touch input. |
 | **FIX-02** | Fix Overlay Launch Touch Lag & Dropped Pointer Events | 2026-10 | Overlay WindowManager LayoutParams must maintain FLAG_NOT_FOCUSABLE or FLAG_LAYOUT_IN_SCREEN or FLAG_LAYOUT_NO_LIMITS or FLAG_HARDWARE_ACCELERATED to prevent surface input stalls. |
+| **FEAT-11** | Full-Screen Desk Mode for Physical Books & Hardcopy Drills | 2026-10 | DeskModeActivity and Floating overlay share single background service/engine; mode switching must minimize/restore overlay seamlessly without interrupting running timer. |
 
 
 
@@ -76,3 +78,10 @@
 ### FIX-02: Fix Overlay Launch Touch Lag & Dropped Pointer Events
 - Update `WindowManager.LayoutParams` flags to incorporate `FLAG_LAYOUT_IN_SCREEN`, `FLAG_LAYOUT_NO_LIMITS`, and `FLAG_HARDWARE_ACCELERATED` alongside `FLAG_NOT_FOCUSABLE`.
 - Ensures immediate hardware-accelerated surface rendering and instant pointer event routing to the overlay window upon launch, eliminating initial dropped taps on buttons and the drag handle.
+
+### FEAT-11: Full-Screen Desk Mode for Physical Books & Hardcopy Drills
+- Dedicated full-screen Activity (`DeskModeActivity`) designed for phone-on-desk/stand usage when practicing from physical books or hardcopy test papers.
+- Large glanceable timers, active question display, and oversized touch targets for A/B/C/D, Skip, and Pause.
+- Shared engine architecture: binds to the running timer service/shared session manager ensuring 100% parity with floating overlay (split logging, auto-resume, pace calculation, CSV export).
+- Seamless mode switching: toggle between floating overlay and full-screen Desk Mode without losing session progress or interrupting active timing.
+- Keeps screen on during practice sessions with wake-lock support.
